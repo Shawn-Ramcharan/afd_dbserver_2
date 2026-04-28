@@ -1,0 +1,41 @@
+[project]
+name = "afd_dbserver"
+version = "1.0.0"
+authors = [
+    { name="Phil Boltt", email="phil.boltt@animatrik.com"},
+    { name="Shawn Ramcharan", email="shawn.ramcharan@animatrik.com" },
+    { name="Petar Milacic", email="petar.milacic@animatrik.com" },
+]
+description="Animatrik Film Design Database API."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python",
+  "Framework :: FastAPI",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+]
+dependencies = [
+  "sqlmodel",
+  "fastapi",
+  "jinja2",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "pytest-cov"
+]
+
+server = [
+  "gunicorn",
+  "uvicorn",
+] 
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+Homepage = "https://github.com/animatrik/afd_dbserver"
+Issues = "https://github.com/animatrik/afd_dbserver"
