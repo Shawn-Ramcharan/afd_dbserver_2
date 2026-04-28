@@ -1,10 +1,10 @@
+from typing import Optional
 import uuid
 from datetime import datetime, timezone
 from sqlmodel import (
     Session,
     SQLModel,
     Field,
-    Column,
     JSON,
     select
 )
@@ -49,10 +49,10 @@ class BaseMixin(IdMixin):
             "onupdate": utcnow
         }
     )
-    
+
     @classmethod
-    def create(cls, model: SQLModel, dbsession: Session):
-        model._convert_data_types()
+    def create(cls, payload: SQLModel, dbsession: Session):
+        model = cls.model_validate(payload)
         model.set_creation_stamp(None)
         dbsession.add(model)
         dbsession.commit()
@@ -60,10 +60,9 @@ class BaseMixin(IdMixin):
         return model
 
     @classmethod
-    def update(cls, id: uuid.UUID, model_data: SQLModel, dbsession: Session):
+    def update(cls, id: uuid.UUID, payload: SQLModel, dbsession: Session):
         model = cls.get_by_id(id, dbsession)
-        model._convert_data_types()
-        model_data._convert_data_types()
+        model_data = cls.model_validate(payload)
         if not model:
             return None
         print("*"*50)
@@ -74,21 +73,6 @@ class BaseMixin(IdMixin):
         dbsession.commit()
         dbsession.refresh(model)
         return model
-
-    def _convert_data_types(self):
-        if isinstance(self.id, str):
-            self.id = uuid.UUID(self.id)
-        date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
-        if isinstance(self.creation_date, str):
-            self.creation_date = datetime.strptime(
-                self.creation_date,
-                date_format
-            )
-        if isinstance(self.last_modified, str):
-            self.last_modified = datetime.strptime(
-                self.last_modified,
-                date_format
-            )
 
     def set_creation_stamp(self, request):
         pass
@@ -104,4 +88,4 @@ class BaseMixin(IdMixin):
 class AttrMixin(SQLModel):
     """Extra Attributes to add in database.
     """
-    attrs: dict | None = Field(sa_column=Column(JSON))
+    attrs: Optional[dict] = Field(default=None, sa_type=JSON)

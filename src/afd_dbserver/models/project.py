@@ -1,4 +1,5 @@
 from typing import Optional
+from sqlalchemy.exc import NoResultFound
 from sqlmodel import (
     SQLModel,
     Session,
@@ -61,5 +62,8 @@ class Project(BaseMixin, AttrMixin, SQLModel, table=True):
 
     @classmethod
     def get_by_code(cls, dbsession: Session, code: str):
-        return dbsession.exec(select(cls).where(cls.code == code)).one()
+        try:
+            return dbsession.exec(select(cls).where(cls.code == code)).one()
+        except NoResultFound:
+            return None
 

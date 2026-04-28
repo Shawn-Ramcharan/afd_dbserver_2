@@ -30,7 +30,7 @@ def get_all_project(
 def create_project(project: Project, dbsession: Session = Depends(get_session)):
     return Project.create(project, dbsession)
 
-@router.get("/project/{project_id}", response_model=Project)
+@router.get("/projects/{project_id}", response_model=Project)
 def get_project_by_id(project_id: uuid.UUID, dbsession: Session = Depends(get_session)):
     project = Project.get_by_id(project_id, dbsession)
     if not project:
@@ -40,7 +40,7 @@ def get_project_by_id(project_id: uuid.UUID, dbsession: Session = Depends(get_se
         )
     return project
 
-@router.put("/project/{project_id}", response_model=Project)
+@router.put("/projects/{project_id}", response_model=Project)
 def update_project(project_id: uuid.UUID, project_data: Project, dbsession: Session = Depends(get_session)):
     project = Project.update(project_id, project_data, dbsession)
     if project is None:
@@ -50,32 +50,33 @@ def update_project(project_id: uuid.UUID, project_data: Project, dbsession: Sess
         )
     return project
 
-@router.get("/projects/{clients}", response_model=list[dict])
+@router.get("/projects/", response_model=Project)
+def get_by_code(code: str, dbsession: Session = Depends(get_session)):
+    project = Project.get_by_code(dbsession, code)
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project code {code} Not Found"
+        )
+    return project
+
+# NOTE: this route is different from
+# will need to investigate later
+@router.get("/projects_clients", response_model=list[dict])
 def get_all_clients(is_active: Optional[bool] = None, dbsession: Session = Depends(get_session)):
     return Project.get_all_clients(
         dbsession,
         is_active=is_active
     )
 
-@router.get("/projects/{code}", response_model=Project)
-def get_by_code(code: str, dbsession: Session = Depends(get_session)):
-    project = Project.get_by_code(dbsession, code)
-    if project is None:
-         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project code {code} Not Found"
-        )
-    return project
-
-
-@router.get("/projects/{locations}", response_model=Project)
+@router.get("/projects/{id}/locations", response_model=Project)
 def get_all_locations(dbsession: Session = Depends(get_session)):
     pass
 
-@router.get("/projects/{project_attr}", response_model=Project)
+@router.get("/projects/{id}/{attr}", response_model=Project)
 def get_attrs(dbsession: Session = Depends(get_session)):
     pass
 
-@router.get("/projects/{slate}", response_model=Project)
+@router.get("/projects/{id}/slate", response_model=Project)
 def get_next_take_from_slate(dbsession: Session = Depends(get_session)):
     pass
