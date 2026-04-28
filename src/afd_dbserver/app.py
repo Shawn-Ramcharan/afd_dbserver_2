@@ -1,13 +1,15 @@
 from fastapi import FastAPI
 from afd_dbserver.routes import (
     project,
-    location
+    location,
+    appliance
 )
 
 app = FastAPI()
 
 app.include_router(project.router)
 app.include_router(location.router)
+app.include_router(appliance.router)
 
 # @app.get("/projects", response_model=list[Any])
 # def home_page():

@@ -21,23 +21,23 @@ def get_all_location(dbsession: Session = Depends(get_session)):
 def create_location(location: Location, dbsession: Session = Depends(get_session)):
     return Location.create(location, dbsession)
 
-@router.get("/locations/{location_id}", response_model=Location)
-def get_location_by_id(location_id: uuid.UUID, dbsession: Session = Depends(get_session)):
-    location = Location.get_by_id(location_id, dbsession)
+@router.get("/locations/{id}", response_model=Location)
+def get_location_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
+    location = Location.get_by_id(id, dbsession)
     if not location:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"location id {location_id} Not Found"
+            detail=f"location id {id} Not Found"
         )
     return location
 
-@router.put("/locations/{location_id}", response_model=Location)
-def update_location(location_id: uuid.UUID, location_data: Location, dbsession: Session = Depends(get_session)):
-    location = Location.update(location_id, location_data, dbsession)
+@router.put("/locations/{id}", response_model=Location)
+def update_location(id: uuid.UUID, location_data: Location, dbsession: Session = Depends(get_session)):
+    location = Location.update(id, location_data, dbsession)
     if location is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"location id {location_id} Not Found"
+            detail=f"location id {id} Not Found"
         )
     return location
 

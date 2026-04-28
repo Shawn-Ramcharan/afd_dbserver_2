@@ -30,23 +30,23 @@ def get_all_project(
 def create_project(project: Project, dbsession: Session = Depends(get_session)):
     return Project.create(project, dbsession)
 
-@router.get("/projects/{project_id}", response_model=Project)
-def get_project_by_id(project_id: uuid.UUID, dbsession: Session = Depends(get_session)):
-    project = Project.get_by_id(project_id, dbsession)
+@router.get("/projects/{id}", response_model=Project)
+def get_project_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
+    project = Project.get_by_id(id, dbsession)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project id {project_id} Not Found"
+            detail=f"Project id {id} Not Found"
         )
     return project
 
-@router.put("/projects/{project_id}", response_model=Project)
-def update_project(project_id: uuid.UUID, project_data: Project, dbsession: Session = Depends(get_session)):
-    project = Project.update(project_id, project_data, dbsession)
+@router.put("/projects/{id}", response_model=Project)
+def update_project(id: uuid.UUID, project_data: Project, dbsession: Session = Depends(get_session)):
+    project = Project.update(id, project_data, dbsession)
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project id {project_id} Not Found"
+            detail=f"Project id {id} Not Found"
         )
     return project
 
@@ -60,8 +60,10 @@ def get_by_code(code: str, dbsession: Session = Depends(get_session)):
         )
     return project
 
-# NOTE: this route is different from
-# will need to investigate later
+# FIXME: original route should be
+# /projects/{clients}. for now not
+# to break the rest of the code
+# added as /project_clients
 @router.get("/projects_clients", response_model=list[dict])
 def get_all_clients(is_active: Optional[bool] = None, dbsession: Session = Depends(get_session)):
     return Project.get_all_clients(
