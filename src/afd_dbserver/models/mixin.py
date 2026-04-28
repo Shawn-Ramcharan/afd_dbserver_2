@@ -5,7 +5,8 @@ from sqlmodel import (
     SQLModel,
     Field,
     Column,
-    JSON
+    JSON,
+    select
 )
 
 def utcnow():
@@ -25,7 +26,7 @@ class IdMixin(SQLModel):
 
     @classmethod
     def get_by_id(cls, id: uuid.UUID, dbsession: Session):
-        return dbsession.get(cls, id)
+        return dbsession.exec(select(cls).where(cls.id==id)).one()
 
 class BaseMixin(IdMixin):
     """BaseMixin

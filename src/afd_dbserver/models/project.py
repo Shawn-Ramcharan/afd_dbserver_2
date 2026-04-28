@@ -52,7 +52,9 @@ class Project(BaseMixin, AttrMixin, SQLModel, table=True):
         projects = projects.order_by(cls.client_code.asc())
         results = dbsession.exec(projects).all()
         clients = {}
-        for code, name in results:
+        for project_ in results:
+            code = project_.client_code
+            name = project_.client_name
             if not code in clients:
                 clients[code] = {"client_code": code, "client_name": name}
         return list(clients.values())
