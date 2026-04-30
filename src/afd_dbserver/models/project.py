@@ -11,7 +11,7 @@ from .mixin import BaseMixin, AttrMixin
 class Project(BaseMixin, AttrMixin, SQLModel, table=True):
     """Project Table.
     """
-    # __tablename__ = "project_t"
+    __tablename__ = "project_t"
     code: str = Field(max_length=32, unique=True, nullable=False)
     name: str = Field(max_length=128)
     client_code: str = Field(max_length=32)

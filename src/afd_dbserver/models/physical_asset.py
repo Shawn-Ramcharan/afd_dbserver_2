@@ -21,7 +21,7 @@ class EPhysicalAssetType(enum.IntEnum):
 class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
     """ 
     """
-    # __tablename__ = "physical_asset_t"
+    __tablename__ = "physical_asset_t"
     code: str = Field(max_length=32, unique=True, nullable=False)
     name: str = Field(max_length=128)
     type_: EPhysicalAssetType = Field(

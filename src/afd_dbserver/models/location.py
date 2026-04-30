@@ -11,7 +11,7 @@ from .mixin import BaseMixin, AttrMixin
 class Location(BaseMixin, AttrMixin, SQLModel, table=True):
     """ A physical location where a shoot is happening.
     """
-    # __tablename__ = "location_t"
+    __tablename__ = "location_t"
     code: str = Field(max_length=32, unique=True, nullable=False)
     name: str = Field(max_length=128)
     address: Optional[str]
