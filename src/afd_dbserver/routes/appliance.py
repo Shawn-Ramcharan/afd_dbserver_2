@@ -14,7 +14,7 @@ from ..models.appliance import Appliance, EApplianceType
 
 router = APIRouter()
 
-@router.get("/appliances", response_model=list[Appliance])
+@router.get("", response_model=list[Appliance])
 def get_all_appliance(
     inactive: Optional[bool] = None,
     type: Optional[EApplianceType] = None,
@@ -28,11 +28,11 @@ def get_all_appliance(
         include_inactive=inactive
     )
 
-@router.post("/appliances", response_model=Appliance)
+@router.post("", response_model=Appliance)
 def create_appliance(appliance: Appliance, dbsession: Session = Depends(get_session)):
     return Appliance.create(appliance, dbsession)
 
-@router.get("/appliances/{id}", response_model=Appliance)
+@router.get("/{id}", response_model=Appliance)
 def get_appliance_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
     appliance = Appliance.get_by_id(id, dbsession)
     if not appliance:
@@ -42,7 +42,7 @@ def get_appliance_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)
         )
     return appliance
 
-@router.put("/appliances/{id}", response_model=Appliance)
+@router.put("/{id}", response_model=Appliance)
 def update_appliance(id: uuid.UUID, appliance_data: Appliance, dbsession: Session = Depends(get_session)):
     appliance = Appliance.update(id, appliance_data, dbsession)
     if appliance is None:
@@ -52,7 +52,7 @@ def update_appliance(id: uuid.UUID, appliance_data: Appliance, dbsession: Sessio
         )
     return appliance
 
-@router.get("/appliances/", response_model=Appliance)
+@router.get("", response_model=Appliance)
 def get_by_code(code: str, dbsession: Session = Depends(get_session)):
     appliance = Appliance.get_by_code(dbsession, code)
     if appliance is None:
@@ -62,6 +62,6 @@ def get_by_code(code: str, dbsession: Session = Depends(get_session)):
         )
     return appliance
 
-@router.get("/appliances/{id}/{attr}", response_model=Appliance)
+@router.get("/{id}/{attr}", response_model=Appliance)
 def get_attrs(dbsession: Session = Depends(get_session)):
     pass
