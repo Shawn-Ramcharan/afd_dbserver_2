@@ -4,6 +4,7 @@ from sqlmodel import (
     SQLModel,
     Session,
     Field,
+    Relationship,
     select
 )
 from .mixin import BaseMixin, AttrMixin
@@ -20,7 +21,7 @@ class Project(BaseMixin, AttrMixin, SQLModel, table=True):
     root_folder: Optional[str] = Field(max_length=512)
     is_active: bool = Field(default=True)
     # virtual_assets = relationship("VirtualAsset", order_by="VirtualAsset.code.asc()")
-    # sessions = relationship("Session", order_by="Session.name.asc()")
+    sessions: list["Session"] = Relationship()
     # takes = relationship("Take", order_by="Take.creation_date.desc()")
     # take_selects = relationship("TakeSelect")
     # take_select_lists = relationship("TakeSelectList", order_by="TakeSelectList.last_modified.desc()")

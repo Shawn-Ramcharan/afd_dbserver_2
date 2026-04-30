@@ -4,6 +4,7 @@ from sqlmodel import (
     SQLModel,
     Session,
     Field,
+    Relationship,
     select
 )
 from .mixin import BaseMixin, AttrMixin
@@ -15,7 +16,7 @@ class Location(BaseMixin, AttrMixin, SQLModel, table=True):
     code: str = Field(max_length=32, unique=True, nullable=False)
     name: str = Field(max_length=128)
     address: Optional[str]
-    # sessions = relationship("Session", back_populates="location")
+    sessions: list["Session"] = Relationship(back_populates="location")
 
     @classmethod
     def get_all(cls, dbsession: Session):
