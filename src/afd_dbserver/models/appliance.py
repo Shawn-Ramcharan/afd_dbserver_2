@@ -12,7 +12,7 @@ from sqlmodel import (
 )
 from .mixin import BaseMixin, AttrMixin
 
-class EApplianceType(enum.Enum):
+class EApplianceType(enum.IntEnum):
     giant           = 1
     motive          = 2
     ajaKiPro        = 3
@@ -47,7 +47,6 @@ class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
         if include_inactive is False:
             appliances = appliances.where(cls.is_active is True)
         if type_ is not None:
-            # FIXME: Need to fix filtering by type_
             appliances = appliances.where(cls.type_ == type_)
         return dbsession.exec(appliances).all()
 

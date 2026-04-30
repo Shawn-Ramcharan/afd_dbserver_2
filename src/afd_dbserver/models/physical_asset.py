@@ -13,7 +13,7 @@ from sqlmodel import (
 from .mixin import BaseMixin, AttrMixin
 from .project import Project
 
-class EPhysicalAssetType(enum.Enum):
+class EPhysicalAssetType(enum.IntEnum):
     performer   = 1
     prop        = 2
     camera      = 3
@@ -39,11 +39,10 @@ class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
     ):
         physical_assets = select(cls)
         if project is not None:
-            # FIXME: implement when SolverSetups is implemented
+            # TODO: implement when SolverSetups is implemented
             # physical_assets = physical_assets.join(SolverSetup).filter(SolverSetup.project_id==project.id)
             return []
         if type_ is not None:
-            # FIXME: Need to fix filtering by type_
             physical_assets = physical_assets.where(cls.type_ == type_)
         return dbsession.exec(physical_assets).all()
 
