@@ -41,7 +41,7 @@ def update_location(id: uuid.UUID, location_data: Location, dbsession: Session =
         )
     return location
 
-@router.get("", response_model=Location)
+@router.get("/", response_model=Location)
 def get_by_code(code: str, dbsession: Session = Depends(get_session)):
     location = Location.get_by_code(dbsession, code)
     if location is None:

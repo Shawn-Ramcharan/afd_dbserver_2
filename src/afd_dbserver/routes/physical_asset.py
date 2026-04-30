@@ -56,7 +56,7 @@ def update_physical_asset(id: uuid.UUID, physical_asset_data: PhysicalAsset, dbs
         )
     return physical_asset
 
-@router.get("", response_model=PhysicalAsset)
+@router.get("/", response_model=PhysicalAsset)
 def get_by_code(code: str, dbsession: Session = Depends(get_session)):
     physical_asset = PhysicalAsset.get_by_code(dbsession, code)
     if physical_asset is None:

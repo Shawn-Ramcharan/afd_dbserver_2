@@ -52,7 +52,7 @@ def update_appliance(id: uuid.UUID, appliance_data: Appliance, dbsession: Sessio
         )
     return appliance
 
-@router.get("", response_model=Appliance)
+@router.get("/", response_model=Appliance)
 def get_by_code(code: str, dbsession: Session = Depends(get_session)):
     appliance = Appliance.get_by_code(dbsession, code)
     if appliance is None:

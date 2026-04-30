@@ -50,7 +50,7 @@ def update_project(id: uuid.UUID, project_data: Project, dbsession: Session = De
         )
     return project
 
-@router.get("", response_model=Project)
+@router.get("/", response_model=Project)
 def get_by_code(code: str, dbsession: Session = Depends(get_session)):
     project = Project.get_by_code(dbsession, code)
     if project is None:
@@ -64,7 +64,7 @@ def get_by_code(code: str, dbsession: Session = Depends(get_session)):
 # /projects/{clients}. for now not
 # to break the rest of the code
 # added as /project_clients
-@router.get("_clients", response_model=list[dict])
+@router.get("/", response_model=list[dict])
 def get_all_clients(is_active: Optional[bool] = None, dbsession: Session = Depends(get_session)):
     return Project.get_all_clients(
         dbsession,
