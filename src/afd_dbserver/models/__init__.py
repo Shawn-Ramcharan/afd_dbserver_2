@@ -6,6 +6,7 @@ from sqlmodel import (
 from .project import Project
 from .location import Location
 from .appliance import Appliance
+from physical_asset import PhysicalAsset
 
 engine = create_engine("sqlite:///./afd_local.db", echo=True)
 SQLModel.metadata.create_all(engine)
