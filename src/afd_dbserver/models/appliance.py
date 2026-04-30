@@ -12,16 +12,16 @@ from sqlmodel import (
 )
 from .mixin import BaseMixin, AttrMixin
 
-class EApplianceType(enum.IntEnum):
-    giant           = 1
-    motive          = 2
-    ajaKiPro        = 3
-    ajaKona         = 4
-    unrealEngine    = 5
-    mugshot         = 6
-    bmdhyperdeck    = 7
-    motionbuilder   = 8
-    livelinkface    = 9
+class EApplianceType(enum.Enum):
+    giant           = "giant"
+    motive          = "motive"
+    ajaKiPro        = "ajaKiPro"
+    ajaKona         = "ajaKona"
+    unrealEngine    = "unrealEngine"
+    mugshot         = "mugshot"
+    bmdhyperdeck    = "bmdhyperdeck"
+    motionbuilder   = "motionbuilder"
+    livelinkface    = "livelinkface"
 
 class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
     """ A physical device on the mocap stage, e.g. witness camera, HMD, AJA KiPro etc.  
@@ -36,9 +36,9 @@ class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
     type_: EApplianceType = Field(
         sa_column=Column(SqlaEnum(EApplianceType,name='eappliancetype'), nullable=False)
     )
-    name: str = Field(max_length=128)
-    serial_number: str = Field(index=True)
-    is_active: bool = Field(default=True)
+    name: Optional[str] = Field(max_length=128)
+    serial_number: Optional[str] = Field(index=True)
+    is_active: Optional[bool] = Field(default=True)
 
     @classmethod
     def get_all(
