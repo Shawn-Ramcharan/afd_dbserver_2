@@ -10,7 +10,7 @@ from sqlmodel import (
     Session,
 )
 from ..models import get_session
-from ..models.physicalAsset import PhysicalAsset, EPhysicalAssetType
+from ..models.physical_asset import PhysicalAsset, EPhysicalAssetType
 from ..models.project import Project
 
 router = APIRouter()
