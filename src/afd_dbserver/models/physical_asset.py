@@ -13,10 +13,10 @@ from sqlmodel import (
 from .mixin import BaseMixin, AttrMixin
 from .project import Project
 
-class EPhysicalAssetType(enum.IntEnum):
-    performer   = 1
-    prop        = 2
-    camera      = 3
+class EPhysicalAssetType(enum.Enum):
+    performer   = "performer"
+    prop        = "prop"
+    camera      = "camera"
 
 class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
     """ 
