@@ -27,7 +27,11 @@ class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
     """ A physical device on the mocap stage, e.g. witness camera, HMD, AJA KiPro etc.  
     """
     __tablename__ = "appliance_t"
-    __table_args__ = (UniqueConstraint('code', 'type_', name='appliance_code_type_uix'), )
+    __table_args__ = (UniqueConstraint(
+        'code',
+        'type_',
+        name='appliance_code_type_uix'
+    ),)
     code: str = Field(max_length=32, unique=True, nullable=False)
     type_: EApplianceType = Field(
         sa_column=Column(SqlaEnum(EApplianceType,name='eappliancetype'), nullable=False)
