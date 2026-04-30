@@ -15,7 +15,7 @@ from ..models.project import Project
 
 router = APIRouter()
 
-@router.get("/physical_assets", response_model=list[PhysicalAsset])
+@router.get("", response_model=list[PhysicalAsset])
 def get_all_physical_asset(
     type: Optional[EPhysicalAssetType] = None,
     project_id: Optional[uuid.UUID] = None,
@@ -32,11 +32,11 @@ def get_all_physical_asset(
         project=project
     )
 
-@router.post("/physical_assets", response_model=PhysicalAsset)
+@router.post("", response_model=PhysicalAsset)
 def create_physical_asset(physical_asset: PhysicalAsset, dbsession: Session = Depends(get_session)):
     return PhysicalAsset.create(physical_asset, dbsession)
 
-@router.get("/physical_assets/{id}", response_model=PhysicalAsset)
+@router.get("/{id}", response_model=PhysicalAsset)
 def get_physical_asset_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
     physical_asset = PhysicalAsset.get_by_id(id, dbsession)
     if not physical_asset:
@@ -46,7 +46,7 @@ def get_physical_asset_by_id(id: uuid.UUID, dbsession: Session = Depends(get_ses
         )
     return physical_asset
 
-@router.put("/physical_assets/{id}", response_model=PhysicalAsset)
+@router.put("/{id}", response_model=PhysicalAsset)
 def update_physical_asset(id: uuid.UUID, physical_asset_data: PhysicalAsset, dbsession: Session = Depends(get_session)):
     physical_asset = PhysicalAsset.update(id, physical_asset_data, dbsession)
     if physical_asset is None:
@@ -56,7 +56,7 @@ def update_physical_asset(id: uuid.UUID, physical_asset_data: PhysicalAsset, dbs
         )
     return physical_asset
 
-@router.get("/physical_assets/", response_model=PhysicalAsset)
+@router.get("", response_model=PhysicalAsset)
 def get_by_code(code: str, dbsession: Session = Depends(get_session)):
     physical_asset = PhysicalAsset.get_by_code(dbsession, code)
     if physical_asset is None:
@@ -66,6 +66,6 @@ def get_by_code(code: str, dbsession: Session = Depends(get_session)):
         )
     return physical_asset
 
-@router.get("/physical_assets/{id}/{attr}", response_model=PhysicalAsset)
+@router.get("/{id}/{attr}", response_model=PhysicalAsset)
 def get_attrs(dbsession: Session = Depends(get_session)):
     pass
