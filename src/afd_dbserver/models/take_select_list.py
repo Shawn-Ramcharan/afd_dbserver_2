@@ -28,10 +28,9 @@ class TakeSelectListAssoc(IdMixin, SQLModel, table=True):
         ),
     )
     take_select_list_id = Field(foreign_key="take_select_list_t.id")
-    take_select_list: "TakeSelectList" = Relationship()
+    take_select_list: TakeSelectList = Relationship()
     take_select_id = Field(foreign_key="take_select_t.id")
-    take_select: "TakeSelect" = Relationship()
-
+    take_select: TakeSelect = Relationship()
 
 class TakeSelectList(
     BaseMixin,

@@ -1,0 +1,3 @@
+
+class ResourceMixin(object):
+    classi
