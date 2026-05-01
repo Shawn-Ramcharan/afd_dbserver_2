@@ -15,7 +15,7 @@ class Location(BaseMixin, AttrMixin, SQLModel, table=True):
     __tablename__ = "location_t"
     code: str = Field(max_length=32, unique=True, nullable=False)
     name: str = Field(max_length=128)
-    address: Optional[str]
+    address: Optional[str] = Field(default="")
     sessions: list["Session"] = Relationship(back_populates="location")
 
     @classmethod

@@ -36,8 +36,8 @@ class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
     type_: EApplianceType = Field(
         sa_column=Column(SqlaEnum(EApplianceType,name='eappliancetype'), nullable=False)
     )
-    name: Optional[str] = Field(max_length=128)
-    serial_number: Optional[str] = Field(index=True)
+    name: Optional[str] = Field(default="", max_length=128)
+    serial_number: Optional[str] = Field(default="", index=True)
     is_active: Optional[bool] = Field(default=True)
 
     @classmethod
@@ -47,9 +47,10 @@ class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
         type_: Optional[EApplianceType] = None,
         include_inactive: bool = False
     ):
-        appliances = select(cls)
-        if include_inactive is False:
-            appliances = appliances.where(cls.is_active is True)
+        if include_inactive is True:
+            appliances = select(cls)
+        else:
+            appliances = select(cls).where(cls.is_active.is_(True))
         if type_ is not None:
             appliances = appliances.where(cls.type_ == type_)
         return dbsession.exec(appliances).all()

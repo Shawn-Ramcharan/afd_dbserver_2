@@ -17,7 +17,7 @@ class Project(BaseMixin, AttrMixin, SQLModel, table=True):
     name: str = Field(max_length=128)
     client_code: str = Field(max_length=32)
     client_name: str = Field(max_length=128)
-    description: Optional[str]
+    description: Optional[str] = Field(default="")
     root_folder: Optional[str] = Field(max_length=512)
     is_active: bool = Field(default=True)
     # virtual_assets = relationship("VirtualAsset", order_by="VirtualAsset.code.asc()")

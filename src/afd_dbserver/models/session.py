@@ -2,75 +2,111 @@ import uuid
 from typing import Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
-from datetime import datetime
+from datetime import datetime, date
 from sqlmodel import Session as DbSession
-from sqlmodel import (
-    SQLModel,
-    Field,
-    Relationship,
-    select
-)
-from .mixin import BaseMixin, AttrMixin, utcnow
+from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
+from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
 from .project import Project
 from .location import Location
 
-class Session(BaseMixin, AttrMixin, SQLModel, table=True): #ResourceMixin, ProjectScopedDataMixin):
-    """
-    """
+
+class Session(
+    BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True
+):
+    """ """
+
     __tablename__ = "session_t"
-    __table_args__ = (UniqueConstraint(
-        'name',
-        'project_id',
-        'location_id',
-        name='session_name_project_location_uix'
-    ),)
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "project_id",
+            "location_id",
+            name="session_name_project_location_uix",
+        ),
+    )
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
-    project: Project = Relationship(back_populates="sessions")
+    project: Optional[Project] = Relationship(back_populates="sessions")
     name: str = Field(max_length=128, nullable=False, index=True)
     description: str = Field(max_length=1024)
-    shoot_date: datetime = Field(default_factory=utcnow)  # should be stored in timezone=UTC
+    # NOTE: Change to date object later!!
+    shoot_date: datetime = Field(
+        default_factory=utcnow
+    )  # should be stored in timezone=UTC
     timecode_rate: str = Field(max_length=32)
-    sample_rate: float
-    folder: str
+    sample_rate: float = Field(default=30.0, ge=0.0)
+    folder: str = Field()
     location_id: uuid.UUID = Field(foreign_key="location_t.id", nullable=False)
-    location: Location = Relationship(back_populates="sessions")
-    # volumes = relationship("Volume", back_populates="session", order_by=desc(text("volume_t.code")))
-    # takes = relationship("Take", back_populates="session", order_by=desc(text("take_t.creation_date")))
-    # notes = relationship("Note", secondary="note_assoc_t", order_by=desc(text("note_t.last_modified")) )
-    # resources = relationship("Resource", secondary="resource_assoc_t", backref=backref("sessions", overlaps="session"), overlaps="session")
+    location: Optional[Location] = Relationship(back_populates="sessions")
+    volumes: list["Volume"] = Relationship(
+        back_populates="session"
+        order_by="Volume.code.desc()"
+    )  # order_by=desc(text("volume_t.code")))
+    takes: list["Take"] = Relationship(
+        back_populates="session",
+        order_by="Take.creation_date.desc()"
+    )  # , order_by=desc(text("take_t.creation_date")))
+    notes: list["NoteAssoc"] = Relationship(
+        back_populates="note_assoc_t",
+        order_by="Note.last_modified.desc()"
+    )  # , order_by=desc(text("note_t.last_modified")) )
+    resources: list["Resource"] = Relationship(back_populates="sessions", link_model="resource_assoc_t")
 
-    # @classmethod
-    # def get_all(cls, request, project, location_ids=None, shoot_dates=None):
-    #     query = request.dbsession.query(cls).filter(cls.project_id==project.id)
-    #     # optional Location filter
-    #     if location_ids is not None:
-    #         query = query.filter(Session.location_id.in_(location_ids))
-    #     # optional date filter
-    #     if shoot_dates is not None:
-    #         query = query.filter(Session.shoot_date.in_(shoot_dates))
-    #     return query.order_by(Session.name).all()
-    #
-    # @classmethod
-    # def get_all_dates(cls, request, project, location_id=None):
-    #     query = request.dbsession.query(cls.shoot_date).filter(cls.project_id==project.id)
-    #     # optional Location filter
-    #     if location_id is not None:
-    #         query = query.filter(cls.location_id==location_id)
-    #     records = query.distinct().all()
-    #     return [i[0] for i in records]
-    #
-    # @classmethod
-    # def get_by_name(cls, request, project, name, location_id=None):
-    #     query = request.dbsession.query(cls).filter(and_(cls.project_id==project.id, cls.name==name))
-    #     if location_id is not None:
-    #         query = query.filter(Session.location_id==location_id)
-    #     return query.all()
-    #
-    # @classmethod
-    # def get_all_locations(cls, request, project_id):
-    #     location_ids = [l[0] for l in request.dbsession.query(distinct(cls.location_id)).filter(cls.project_id==project_id).all()]
-    #     return [Location.get_by_id(request, location_id) for location_id in location_ids]
-    #
+
+    @classmethod
+    def get_all(
+        cls,
+        dbsession: DbSession,
+        project: Project,
+        location_ids: Optional[list[uuid.UUID]] = None,
+        shoot_dates: Optional[list[datetime]] = None,
+    ):
+        sessions = select(cls).where(cls.project_id == project.id)
+        # optional Location filter
+        if location_ids is not None:
+            sessions = sessions.where(cls.location_id.in_(location_ids))
+        # optional date filter
+        if shoot_dates is not None:
+            sessions = sessions.where(cls.shoot_date.in_(shoot_dates))
+        return dbsession.exec(sessions.order_by(cls.name)).all()
+
+    @classmethod
+    def get_all_dates(
+        cls,
+        dbsession: DbSession,
+        project: Project,
+        location_id: Optional[uuid.UUID] = None,
+    ):
+        sessions = select(cls.shoot_date).where(cls.project_id == project.id)
+        # optional Location filter
+        if location_id is not None:
+            sessions = sessions.where(cls.location_id == location_id)
+        records = dbsession.exec(sessions.distinct()).all()
+        # return [i[0] for i in records]
+        return [i for i in records]
+
+    @classmethod
+    def get_by_name(
+        cls,
+        dbsession: DbSession,
+        project: Project,
+        name: str,
+        location_id: Optional[uuid.UUID] = None,
+    ):
+        sessions = (
+            select(cls).where(cls.project_id ==
+                              project.id).where(cls.name == name)
+        )
+        if location_id is not None:
+            sessions = sessions.where(Session.location_id == location_id)
+        return dbsession.exec(sessions).all()
+
+    @classmethod
+    def get_all_locations(cls, dbsession: DbSession, project_id: uuid.UUID):
+        query = select(distinct(cls.location_id)).where(
+            cls.project_id == project_id)
+        location_ids = dbsession.exec(query).scalars().all()
+        return [Location.get_by_id(loc_id) for loc_id in location_ids]
+
     # def get_takes(self, request, type_=None):
     #     from .take import Take
     #     query = request.dbsession.query(Take).filter(Take.session_id==self.id)
