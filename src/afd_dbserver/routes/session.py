@@ -1,0 +1,65 @@
+import uuid
+from typing import Optional
+from fastapi import (
+    Depends,
+    HTTPException,
+    APIRouter,
+    status
+)
+from sqlmodel import Session as DbSession
+from ..models import get_session
+from ..models.session import Session
+
+router = APIRouter()
+
+@router.get("", response_model=list[Appliance])
+def get_all_appliance(
+    inactive: Optional[bool] = None,
+    type: Optional[EApplianceType] = None,
+    dbsession: DbSession = Depends(get_session)
+):
+    if inactive is None:
+        inactive = False
+    return Appliance.get_all(
+        dbsession,
+        type_=type,
+        include_inactive=inactive
+    )
+
+@router.post("", response_model=Appliance)
+def create_appliance(appliance: Appliance, dbsession: DbSession = Depends(get_session)):
+    return Appliance.create(appliance, dbsession)
+
+@router.get("/{id}", response_model=Appliance)
+def get_appliance_by_id(id: uuid.UUID, dbsession: DbSession = Depends(get_session)):
+    appliance = Appliance.get_by_id(id, dbsession)
+    if not appliance:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"appliance id {id} Not Found"
+        )
+    return appliance
+
+@router.put("/{id}", response_model=Appliance)
+def update_appliance(id: uuid.UUID, appliance_data: Appliance, dbsession: DbSession = Depends(get_session)):
+    appliance = Appliance.update(id, appliance_data, dbsession)
+    if appliance is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"appliance id {id} Not Found"
+        )
+    return appliance
+
+@router.get("/", response_model=Appliance)
+def get_by_code(code: str, dbsession: DbSession = Depends(get_session)):
+    appliance = Appliance.get_by_code(dbsession, code)
+    if appliance is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"appliance code {code} Not Found"
+        )
+    return appliance
+
+@router.get("/{id}/{attr}", response_model=Appliance)
+def get_attrs(dbsession: DbSession = Depends(get_session)):
+    pass
