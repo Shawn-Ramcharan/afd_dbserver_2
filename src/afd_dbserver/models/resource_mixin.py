@@ -1,3 +1,3 @@
 
 class ResourceMixin(object):
-    classi
+    pass

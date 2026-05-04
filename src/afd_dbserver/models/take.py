@@ -4,7 +4,9 @@ from typing import Optional
 from sqlalchemy import Enum as SqlaEnum
 from sqlmodel import (SQLModel, Field, Relationship, Field, Column)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .resource_mixin import ResourceMixin
 from .project import Project
+from .resource import Resource
 
 
 class ETakeType(enum.Enum):
@@ -63,6 +65,6 @@ class Take(
     take_selects: Optional[list["TakeSelect"]] = Relationship(
         back_populates="take", order_by="TakeSelect.creation_date.desc()"
     )
-    resources: Optional[list["Resource"]] = Relationship(
+    resources: Optional[list[Resource]] = Relationship(
         link_model="resource_assoc_t", back_populates="takes"
     )

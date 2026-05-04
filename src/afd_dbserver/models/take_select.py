@@ -22,8 +22,8 @@ class TakeSelect(Base, BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMix
     is_editable: Optional[bool] = Field(default=True)
     take_id: uuid.UUID = Field(foreign_key="take_t.id", nullable=False)
     take: Take = Relationship(back_populates="take_selects", lazy='joined')
-    delivery_date: Optional[date] = Field(default=None)
-    delivered: Optional[bool] = Field(default=False)
+    # delivery_date: Optional[date] = Field(default=None)
+    # delivered: Optional[bool] = Field(default=False)
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Optional[Project] = Relationship(back_populates="take_selects")
     capture_load_id: uuid.UUID = Field(

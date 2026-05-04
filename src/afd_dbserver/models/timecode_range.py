@@ -17,7 +17,6 @@ class ETimecodeRangeType(enum.Enum):
     process = "process"
     qc = "qc"
 
-
 class TimecodeRange(
     BaseMixin, AttrMixin, ProjectScopedParentMixin, SQLModel, table=True
 ):

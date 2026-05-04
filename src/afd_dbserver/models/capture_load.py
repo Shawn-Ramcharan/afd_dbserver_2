@@ -8,6 +8,8 @@ from sqlmodel import (
 )
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .project import Project
+from .take import Take
+from .volume import Volume
 
 
 class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
@@ -18,12 +20,12 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship()
     name: str = Field(max_length=128)
-    tags: Optional[list[str]] = Feild(default=[])
+    tags: Optional[list[str]] = Field(default=None)
     volume_id: Optional[uuid.UUID] = Field(foreign_key="volume_t.id")
-    volume: Optional["Volume"] = Relationship(back_populates="capture_loads")
+    volume: Optional[Volume] = Relationship(back_populates="capture_loads")
     take_id: Optional[uuid.UUID] = Field(foreign_key="take_t.id")
-    take: Optional["Take"] = Relationship(back_populates="capture_loads")
-    entries: list["CaptureLoadEntry"] = Relationship(
+    take: Optional[Take] = Relationship(back_populates="capture_loads")
+    entries: list[CaptureLoadEntry] = Relationship(
         back_populates="capture_load", order_by="CaptureLoadEntry.index.asc()"
     )
 

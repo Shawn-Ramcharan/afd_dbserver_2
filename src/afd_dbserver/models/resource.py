@@ -1,79 +1,138 @@
-class ResourceAssoc(Base, IdMixin):
+from __future__ import annotations
+import uuid
+from typing import ClassVar, Optional
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.schema import UniqueConstraint
+from datetime import datetime, date
+from sqlmodel import Column, Session as DbSession
+from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
+from .mixin import (
+    IdMixin,
+    BaseMixin,
+    AttrMixin,
+    ProjectScopedDataMixin,
+    ProjectScopedAssocMixin,
+    ProjectScopedParentMixin,
+    utcnow,
+)
+from .project import Project
+
+
+class ResourceAssoc(IdMixin, SQLModel, table=True):
     __tablename__ = "resource_assoc_t"
-    resource_id = Column(ForeignKey("resource_t.id"), unique=True)
-    resource = relationship("Resource")
-    project_id =  Column(ForeignKey("project_t.id"))
-    project = relationship("Project")
-    solver_setup_id = Column(ForeignKey("solver_setup_t.id"))
-    solver_setup = relationship("SolverSetup")
-    virtual_asset_revision_id = Column(ForeignKey("virtual_asset_revision_t.id"))
-    virtual_asset_revision = relationship("VirtualAssetRevision")
-    mapping_id = Column(ForeignKey("mapping_t.id"))
-    mapping = relationship("Mapping")
-    session_id = Column(ForeignKey("session_t.id"))
-    session = relationship("Session")
-    volume_id = Column(ForeignKey("volume_t.id"))
-    volume = relationship("Volume")
-    device_id = Column(ForeignKey("device_t.id"))
-    device = relationship("Device")
-    take_id = Column(ForeignKey("take_t.id"))
-    take = relationship("Take")
-    take_select_id = Column(ForeignKey("take_select_t.id"))
-    take_select = relationship("TakeSelect")
+    resource_id: uuid.UUID = Field(foreign_key="resource_t.id", unique=True)
+    resource: "Resource" = Relationship()
+    project_id: Optional[uuid.UUID] = Field(foreign_key="project_t.id")
+    project: Project = Relationship()
+    solver_setup_id: Optional[uuid.UUID] = Field(foreign_key="solver_setup_t.id")
+    solver_setup: "SolverSetup" = Relationship()
+    virtual_asset_revision_id: Optional[uuid.UUID] = Field(
+        foreign_key="virtual_asset_revision_t.id"
+    )
+    virtual_asset_revision: "VirtualAssetRevision" = Relationship()
+    mapping_id: Optional[uuid.UUID] = Field(foreign_key="mapping_t.id")
+    mapping: "Mapping" = Relationship()
+    session_id: Optional[uuid.UUID] = Field(foreign_key="session_t.id")
+    session: "Session" = Relationship()
+    volume_id: Optional[uuid.UUID] = Field(foreign_key="volume_t.id")
+    volume: "Volume" = Relationship()
+    device_id: Optional[uuid.UUID] = Field(foreign_key="device_t.id")
+    device: "Device" = Relationship()
+    take_id: Optional[uuid.UUID] = Field(foreign_key="take_t.id")
+    take: "Take" = Relationship()
+    take_select_id: Optional[uuid.UUID] = Field(foreign_key="take_select_t.id")
+    take_select: "TakeSelect" = Relationship()
 
-class Resource(Base, BaseMixin, AttrMixin, ProjectScopedDataMixin, ProjectScopedAssocMixin):
+
+class Resource(
+    BaseMixin,
+    AttrMixin,
+    ProjectScopedDataMixin,
+    ProjectScopedAssocMixin,
+    SQLModel,
+    table=True,
+):
     __tablename__ = "resource_t"
-    name = Column(String(64))
-    group = Column(String(64))
-    uri = Column(String(256))
-    project_id = Column(ForeignKey("project_t.id"), nullable=False)
-    project = relationship("Project")
-    PROJECT_ASSOC_CLS = ResourceAssoc
+    name: str = Field(max_length=64)
+    group: str = Field(max_length=64)
+    uri: Optional[str] = Field(max_length=256)
+    project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
+    project: Project = Relationship()
+    PROJECT_ASSOC_CLS: ClassVar = ResourceAssoc
 
 
-class Version(Base, BaseMixin, AttrMixin, ProjectScopedDataMixin):
+class Version(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
 
-    LATEST = 'latest'
-    OFFICIAL = 'official'
+    LATEST: ClassVar = "latest"
+    OFFICIAL: ClassVar = "official"
 
     __tablename__ = "version_t"
-    number = Column(Integer)
-    tags = Column(ARRAY(Text))
-    description = Column(String(1024))
-    is_committed = Column(Boolean, default=False)
-    uri = Column(String(256))
-    resource_id = Column(ForeignKey('resource_t.id'), nullable=False)
-    resource = relationship(Resource, backref="versions")
-    project_id = Column(ForeignKey("project_t.id"), nullable=False)
-    project = relationship("Project")
-    outgoing_links = relationship("VersionLink", back_populates="from_version", foreign_keys="VersionLink.from_version_id")
-    incoming_links = relationship("VersionLink", back_populates="to_version", foreign_keys="VersionLink.to_version_id")
+    number: Optional[int] = Field(ge=1)
+    # tags: Optional[list[str]] = Field(default=None)
+    description: Optional[str] = Field(max_length=1024)
+    is_committed: Optional[bool] = Field(default=False)
+    uri: Optional[str] = Field(max_length=256)
+    resource_id: uuid.UUID = Field(foreign_key="resource_t.id", nullable=False)
+    resource: "Resource" = Relationship(back_populates="versions")
+    project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
+    project: Project = Relationship()
+    outgoing_links: list[VersionLink] = Relationship(
+        back_populates="from_version",
+        # link_model=VersionLink,
+        # foreign_keys=["from_version_id"],
+    )
+    incoming_links: list[VersionLink] = Relationship(
+        back_populates="to_version",
+        # link_model=VersionLink,
+        # foreign_keys=["to_version_id"],
+    )
 
-class VersionLink(Base, BaseMixin, AttrMixin, ProjectScopedParentMixin):
+
+class VersionLink(BaseMixin, AttrMixin, ProjectScopedParentMixin, SQLModel, table=True):
     __tablename__ = "version_link_t"
-    __table_args__ = ( UniqueConstraint('name', 'from_version_id', 'to_version_id', name='version_link_name_from_to_uix'), )
-    name = Column(String(1024))
-    from_version_id = Column(ForeignKey("version_t.id"), nullable=False)
-    from_version = relationship(Version, back_populates="outgoing_links", foreign_keys=from_version_id)
-    to_version_id = Column(ForeignKey("version_t.id"), nullable=False)
-    to_version = relationship(Version, back_populates="incoming_links", foreign_keys=to_version_id)
-    PROJECT_PARENT_CLS = Version
-    PROJECT_CLS_ATTR = "to_version_id"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "from_version_id",
+            "to_version_id",
+            name="version_link_name_from_to_uix",
+        ),
+    )
+    name: str = Field(max_length=1024)
+    from_version_id: uuid.UUID = Field(foreign_key="version_t.id", nullable=False)
+    from_version: Version = Relationship(
+        back_populates="outgoing_links",
+        link_model=Version,
+        # foreign_keys=from_version_id
+    )
+    to_version_id: uuid.UUID = Field(foreign_key="version_t.id", nullable=False)
+    to_version: Version = Relationship(
+        back_populates="incoming_links",
+        link_model=Version,
+        # foreign_keys=[to_version_id]
+    )
+    PROJECT_PARENT_CLS: ClassVar = Version
+    PROJECT_CLS_ATTR: ClassVar = "to_version_id"
 
 
-class ItemAssoc(Base, IdMixin, ProjectScopedParentMixin):
+class ItemAssoc(IdMixin, ProjectScopedParentMixin, SQLModel, table=True):
     __tablename__ = "item_assoc_t"
-    __table_args__ = ( UniqueConstraint('version_id', 'name', name='version_name_item_uix'), )
-    version_id = Column(ForeignKey("version_t.id"), nullable=False)
-    item_id = Column(ForeignKey("item_t.id"), nullable=False)
-    name = Column(String(64))
-    uri = Column(String(256))
-    version = relationship("Version")
-    item = relationship("Item", lazy="joined")
-    PROJECT_PARENT_CLS = Version
-    PROJECT_CLS_ATTR = "version_id"
+    __table_args__ = (
+        UniqueConstraint("version_id", "name", name="version_name_item_uix"),
+    )
+    version_id: uuid.UUID = Field(foreign_key="version_t.id", nullable=False)
+    item_id: uuid.UUID = Field(foreign_key="item_t.id", nullable=False)
+    name: Optional[str] = Field(max_length=64)
+    uri: Optional[str] = Field(max_length=256)
+    version: Version = Relationship()
+    item: Item = Relationship()#lazy="joined")
+    PROJECT_PARENT_CLS: ClassVar = Version
+    PROJECT_CLS_ATTR: ClassVar = "version_id"
 
-class Item(Base, BaseMixin, AttrMixin):
+
+class Item(BaseMixin, AttrMixin, SQLModel, table=True):
     __tablename__ = "item_t"
-    location_hash = Column(LargeBinary(16), unique=True, index=True, nullable=False)
-    _location = Column(String(512))
+    location_hash: Optional[bytes] = Field(
+        default=None, unique=True, index=True, nullable=False
+    )
+    location_: Optional[str] = Field(max_length=512, sa_column=Column("_location"), default=None)

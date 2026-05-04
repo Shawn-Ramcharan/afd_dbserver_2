@@ -6,7 +6,9 @@ from datetime import datetime, date
 from sqlmodel import Session as DbSession
 from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
+from .resource_mixin import ResourceMixin
 from .project import Project
+from .session import Session
 
 
 class Volume(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin):

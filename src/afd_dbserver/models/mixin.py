@@ -12,7 +12,7 @@ def utcnow():
 class IdMixin(SQLModel):
     """ID"""
 
-    id: uuid.UUID = Field(
+    id: Optional[uuid.UUID] = Field(
         # sa_type=UUID(as_uuid=True),
         primary_key=True,
         unique=True,

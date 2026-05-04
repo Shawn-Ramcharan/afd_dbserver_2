@@ -7,7 +7,23 @@ from .project import Project
 from .location import Location
 from .appliance import Appliance
 from .physical_asset import PhysicalAsset
-from .session import Session
+
+
+
+from .resource import Resource, Version, VersionLink, Item, ItemAssoc
+# from .volume import Volume
+from .device import Device
+from .virtual_asset import VirtualAsset, VirtualAssetRevision
+from .solver_setup import SolverSetup
+from .mapping import Mapping
+from .session import Session, Volume
+from .take import Take
+from .capture_load import CaptureLoad, CaptureLoadEntry, CaptureLoadEntryVersion
+from .timecode_range import TimecodeRange
+from .note import Note, NoteAssoc
+from .take_select import TakeSelect
+from .take_select_list import TakeSelectList, TakeSelectListAssoc
+
 
 engine = create_engine("sqlite:///./afd_local.db", echo=True)
 
