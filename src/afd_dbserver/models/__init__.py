@@ -7,22 +7,19 @@ from .project import Project
 from .location import Location
 from .appliance import Appliance
 from .physical_asset import PhysicalAsset
-
-
-
-from .resource import Resource, Version, VersionLink, Item, ItemAssoc
-# from .volume import Volume
 from .device import Device
 from .virtual_asset import VirtualAsset, VirtualAssetRevision
 from .solver_setup import SolverSetup
 from .mapping import Mapping
-from .session import Session, Volume
+from .session import Session
+from .volume import Volume
 from .take import Take
 from .capture_load import CaptureLoad, CaptureLoadEntry, CaptureLoadEntryVersion
 from .timecode_range import TimecodeRange
 from .note import Note, NoteAssoc
 from .take_select import TakeSelect
 from .take_select_list import TakeSelectList, TakeSelectListAssoc
+from .resource import ResourceAssoc, Resource, Version, VersionLink, Item, ItemAssoc
 
 
 engine = create_engine("sqlite:///./afd_local.db", echo=True)

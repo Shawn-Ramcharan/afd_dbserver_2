@@ -1,13 +1,20 @@
 
 import uuid
-from typing import Optional
+import enum
+from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
+from sqlalchemy import Enum as SqlaEnum
 from datetime import datetime, date
 from sqlmodel import Session as DbSession
-from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
+from sqlmodel import (SQLModel, Field, Relationship, Column, distinct, select)
+
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
+from .resource_mixin import ResourceMixin
 from .project import Project
+from .resource import Resource, ResourceAssoc
+if TYPE_CHECKING:
+    from .mapping import Mapping
 
 class EVirtualAssetType(enum.Enum):
     character = "character"
@@ -16,30 +23,30 @@ class EVirtualAssetType(enum.Enum):
     camera = "camera"
 
 
-class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin):
+class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
     """ """
 
     __tablename__ = "virtual_asset_t"
     __table_args__ = (
         UniqueConstraint("code", "project_id",
-                         name="virtual_asset_code_project_uix"),
+        name="virtual_asset_code_project_uix"),
     )
     code: str = Field(max_length=32, nullable=False)
     client_name: Optional[str] = Field(max_digits=128)
-    
-    type_ = Field(Enum(EVirtualAssetType), nullable=False)
-    
+    type_: EVirtualAssetType = Field(
+        sa_column=Column(SqlaEnum(EVirtualAssetType, name='evirtualassettype'), nullable=False)
+    )
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
-    project: Optional[Project] = Relationship(back_populates="virtual_assets")
-    revisions: VirtualAssetRevision = Relationship(
-        order_by="desc(VirtualAssetRevision.number)",
+    project: Project = Relationship(back_populates="virtual_assets")
+    revisions: list["VirtualAssetRevision"] = Relationship(
+        # order_by="desc(VirtualAssetRevision.number)",
         back_populates="virtual_asset",
     )
 
-class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin):
+class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
     """ """
 
-    OFFICIAL = "official"
+    OFFICIAL: ClassVar = "official"
 
     __tablename__ = "virtual_asset_revision_t"
     __table_args__ = (
@@ -49,24 +56,24 @@ class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDat
             name="virtual_asset_revision_virtual_asset_id_number_uix",
         ),
     )
+    project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
+    project: Project = Relationship()
     number: int = Field(nullable=False, ge=1)
-    tags: list[str] = Field(default=[])
+    # tags: Optional[list[str]] = Field(default=None)
     virtual_asset_id: uuid.UUID = Field(foreign_key="virtual_asset_t.id", nullable=False)
     virtual_asset: VirtualAsset = Relationship(
-        back_populates="revisions", lazy="joined"
+        back_populates="revisions",
+        sa_relationship_kwargs=dict(lazy="joined")
     )
-    project_id = Field(ForeignKey("project_t.id"), nullable=False)
-    project = Relationship("Project")
-    source_mappings = Relationship(
-        "Mapping",
+    source_mappings: list["Mapping"] = Relationship(
         back_populates="source",
-        primaryjoin="VirtualAssetRevision.id==Mapping.source_id",
+        sa_relationship_kwargs=dict(primaryjoin="VirtualAssetRevision.id==Mapping.source_id")
     )
-    target_mappings = Relationship(
-        "Mapping",
+    target_mappings: list["Mapping"] = Relationship(
         back_populates="target",
-        primaryjoin="VirtualAssetRevision.id==Mapping.target_id",
+        sa_relationship_kwargs=dict(primaryjoin="VirtualAssetRevision.id==Mapping.target_id")
     )
-    resources = Relationship(
-        "Resource", secondary="resource_assoc_t", backref="virtual_asset_revisions"
+    resources: list["Resource"] = Relationship(
+        link_model=ResourceAssoc,
+        back_populates="virtual_asset_revision"
     )

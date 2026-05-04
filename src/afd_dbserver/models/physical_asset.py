@@ -1,5 +1,5 @@
 import enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy import Enum as SqlaEnum
 from sqlalchemy.schema import UniqueConstraint
@@ -8,10 +8,14 @@ from sqlmodel import (
     Session,
     Column,
     Field,
+    Relationship,
     select
 )
 from .mixin import BaseMixin, AttrMixin
 from .project import Project
+
+if TYPE_CHECKING:
+    from .solver_setup import SolverSetup
 
 class EPhysicalAssetType(enum.Enum):
     performer   = "performer"
@@ -28,7 +32,7 @@ class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
         sa_column=Column(SqlaEnum(EPhysicalAssetType,name='ephysicalassettype'))
     )
     subject_id: str = Field(max_length=128, unique=True)
-    # solver_setups = relationship("SolverSetup", back_populates="physical_asset")
+    solver_setups: "SolverSetup" = Relationship(back_populates="physical_asset")
 
     @classmethod
     def get_all(

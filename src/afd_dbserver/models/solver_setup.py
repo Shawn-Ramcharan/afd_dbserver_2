@@ -1,12 +1,16 @@
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from sqlmodel import Session as DbSession
 from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .resource_mixin import ResourceMixin
 from .project import Project
 from .physical_asset import PhysicalAsset
+
+if TYPE_CHECKING:
+    from .virtual_asset import VirtualAssetRevision
 
 class SolverSetup(
     BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True
@@ -31,12 +35,13 @@ class SolverSetup(
         foreign_key="physical_asset_t.id", nullable=False
     )
     physical_asset: PhysicalAsset = Relationship(
-        back_populates="solver_setups", lazy="joined"
+        back_populates="solver_setups",
+        #lazy="joined"
     )
-    virtual_asset_revision_id = Field(
+    virtual_asset_revision_id: uuid.UUID = Field(
         foreign_key="virtual_asset_revision_t.id", nullable=False
     )
-    virtual_asset_revision: "VirtualAssetRevision" = Relationship(lazy="joined")
-    resources: "Resource" = Relationship(
-        link_model="resource_assoc_t", back_populates="solver_setup"
-    )
+    virtual_asset_revision: "VirtualAssetRevision" = Relationship()#lazy="joined")
+    # resources: "Resource" = Relationship(
+    #     link_model="resource_assoc_t", back_populates="solver_setup"
+    # )

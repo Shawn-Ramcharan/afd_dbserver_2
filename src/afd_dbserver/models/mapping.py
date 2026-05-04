@@ -1,12 +1,17 @@
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from datetime import datetime, date
 from sqlmodel import Session as DbSession
 from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .resource_mixin import ResourceMixin
 from .project import Project
+from .resource import Resource, ResourceAssoc
+
+if TYPE_CHECKING:
+    from .virtual_asset import VirtualAssetRevision
 
 
 class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
@@ -25,22 +30,24 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship()
     source_id: uuid.UUID = Field(
-        foreign_key="virtual_asset_revision_t.id",
+        # foreign_key="virtual_asset_revision_t.id",
         nullable=False
     )
     source: "VirtualAssetRevision" = Relationship(
-        foreign_keys=[source_id],
         back_populates="source_mappings",
-        lazy="joined"
+        # foreign_keys=[source_id],
+        # lazy="joined"
     )
     target_id: uuid.UUID = Field(
-        foreign_key="virtual_asset_revision_t.id", nullable=False
+        # foreign_key="virtual_asset_revision_t.id",
+        nullable=False
     )
     target: "VirtualAssetRevision" = Relationship(
-        foreign_keys=[target_id],
-        back_populates="target_mappings", lazy="joined"
+        # foreign_keys=[target_id],
+        back_populates="target_mappings",
+        # lazy="joined"
     )
     resources: list["Resource"] = Relationship(
-        link_model="resource_assoc_t",
+        link_model=ResourceAssoc,
         back_populates="mapping"
     )

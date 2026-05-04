@@ -1,11 +1,15 @@
 import uuid
 import enum
-from typing import Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy import Enum as SqlaEnum
 from sqlmodel import (SQLModel, Field, Relationship, Column)
 from .mixin import IdMixin, BaseMixin, AttrMixin, ProjectScopedDataMixin, ProjectScopedAssocMixin
 from .project import Project
 
+if TYPE_CHECKING:
+    from .take import Take
+    from .take_select import TakeSelect
+    from .session import Session
 
 class NoteAssoc(IdMixin, SQLModel, table=True):
     __tablename__ = "note_assoc_t"
@@ -45,12 +49,15 @@ class Note(
         sa_column=Column(SqlaEnum(ENoteType, name="enoteype"), nullable=False)
     )
     session: Optional["Session"] = Relationship(
-        link_model="note_assoc_t", back_populates="notes"
+        #link_model="note_assoc_t",
+        back_populates="notes"
     )
     take: Optional["Take"] = Relationship(
-        link_model="note_assoc_t", back_populates="notes"
+        #link_model="note_assoc_t",
+        back_populates="notes"
     )
     take_select: Optional["TakeSelect"] = Relationship(
-        link_model="note_assoc_t", back_populates="note"
+        #link_model="note_assoc_t",
+        back_populates="note"
     )
-    PROJECT_ASSOC_CLS = NoteAssoc
+    PROJECT_ASSOC_CLS: ClassVar = NoteAssoc

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import (
     SQLModel,
@@ -8,6 +8,13 @@ from sqlmodel import (
     select
 )
 from .mixin import BaseMixin, AttrMixin
+
+if TYPE_CHECKING:
+    from .take import Take
+    from .take_select import TakeSelect
+    from .virtual_asset import VirtualAsset
+    from .session import Session
+    from .resource import Resource
 
 class Project(BaseMixin, AttrMixin, SQLModel, table=True):
     """Project Table.
@@ -20,12 +27,12 @@ class Project(BaseMixin, AttrMixin, SQLModel, table=True):
     description: Optional[str] = Field(default="")
     root_folder: Optional[str] = Field(max_length=512)
     is_active: bool = Field(default=True)
-    # virtual_assets = relationship("VirtualAsset", order_by="VirtualAsset.code.asc()")
+    virtual_assets: "VirtualAsset" = Relationship()# order_by="VirtualAsset.code.asc()")
     sessions: list["Session"] = Relationship()
-    # takes = relationship("Take", order_by="Take.creation_date.desc()")
-    # take_selects = relationship("TakeSelect")
-    # take_select_lists = relationship("TakeSelectList", order_by="TakeSelectList.last_modified.desc()")
-    # resources = relationship("Resource", secondary="resource_assoc_t", backref="projects")
+    takes: list["Take"] = Relationship()# order_by="Take.creation_date.desc()")
+    take_selects: list["TakeSelect"] = Relationship()#"TakeSelect")
+    take_select_lists: list["TakeSelectList"] = Relationship()# order_by="TakeSelectList.last_modified.desc()")
+    resources: list["Resource"] = Relationship(back_populates="projects")#secondary="resource_assoc_t")
 
     @classmethod
     def get_all(

@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from datetime import datetime, date
@@ -9,10 +9,11 @@ from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .location import Location
-# from .volume import Volume
-from .take import Take
-from .note import Note
-from .resource import Resource
+if TYPE_CHECKING:
+    from .volume import Volume
+    from .take import Take
+    from .note import Note
+    from .resource import Resource
 
 
 class Session(
@@ -42,19 +43,22 @@ class Session(
     folder: str = Field()
     location_id: uuid.UUID = Field(foreign_key="location_t.id", nullable=False)
     location: Optional[Location] = Relationship(back_populates="sessions")
-    volumes: list[Volume] = Relationship(
+    volumes: list["Volume"] = Relationship(
         back_populates="session",
         # order_by="Volume.code.desc()"
     )  # order_by=desc(text("volume_t.code")))
-    takes: list[Take] = Relationship(
+    takes: list["Take"] = Relationship(
         back_populates="session",
         # order_by="Take.creation_date.desc()"
     )  # , order_by=desc(text("take_t.creation_date")))
-    notes: list[Note] = Relationship(
+    notes: list["Note"] = Relationship(
         back_populates="note_assoc_t",
         # order_by="Note.last_modified.desc()"
     )  # , order_by=desc(text("note_t.last_modified")) )
-    resources: list[Resource] = Relationship(back_populates="sessions", link_model="resource_assoc_t")
+    resources: list["Resource"] = Relationship(
+        back_populates="sessions",
+        # link_model="resource_assoc_t"
+    )
 
 
     @classmethod

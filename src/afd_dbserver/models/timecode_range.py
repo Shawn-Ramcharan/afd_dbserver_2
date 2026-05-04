@@ -1,11 +1,15 @@
 import uuid
-from typing import Optional
+import enum
+from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import Enum as SqlaEnum
 from sqlmodel import Session as DbSession
-from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
+from sqlmodel import (SQLModel, Field, Relationship, Column, distinct, select)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedParentMixin
+
+if TYPE_CHECKING:
+    from .take import Take
 
 class ETimecodeRangeType(enum.Enum):
     capture = "capture"
@@ -32,6 +36,6 @@ class TimecodeRange(
     frame_count: Optional[int] = Field(default=0, ge=0)
     description: Optional[str] = Field()
     take_id: uuid.UUID = Field(foreign_key="take_t.id")
-    take: Take = Relationship(back_populates="timecode_ranges")
-    PROJECT_PARENT_CLS = Take
-    PROJECT_CLS_ATTR = "take_id"
+    take: "Take" = Relationship(back_populates="timecode_ranges")
+    PROJECT_PARENT_CLS: ClassVar = "Take"
+    PROJECT_CLS_ATTR: ClassVar = "take_id"

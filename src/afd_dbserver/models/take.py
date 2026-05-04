@@ -1,12 +1,20 @@
 import uuid
 import enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Enum as SqlaEnum
+from sqlalchemy.schema import UniqueConstraint
 from sqlmodel import (SQLModel, Field, Relationship, Field, Column)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
-from .resource import Resource
+
+if TYPE_CHECKING:
+    from .resource import Resource
+    from .take_select import TakeSelect
+    from .timecode_range import TimecodeRange
+    from .session import Session
+    from .capture_load import CaptureLoad
+    from .note import Note
 
 
 class ETakeType(enum.Enum):
@@ -47,24 +55,30 @@ class Take(
     status: ETakeStatus = Field(
         sa_column=Column(SqlaEnum(ETakeStatus, name="etakestatus"), nullable=False)
     )
-    tags: Optional[list[str]] = Field(default=[])
+    # FIXME: need to find out wht Optional list of str dont work!!
+    # tags: Optional[list[str]] = Field(default=None0
     folder: Optional[str] = Field()
     session_id: Optional[uuid.UUID] = Field(foreign_key="session_t.id")
-    session: Optional["Session"] = Relationship(back_populates="takes")
-    capture_loads: Optional[list["CaptureLoad"]] = Relationship(
-        back_populates="take", order_by="CaptureLoad.creation_date.desc()"
-    )
-    timecode_ranges: Optional[list["TimecodeRange"]] = Relationship(
+    session: "Session" = Relationship(back_populates="takes")
+    capture_loads: list["CaptureLoad"] = Relationship(
         back_populates="take",
-        lazy="joined",
-        order_by="TimecodeRange.creation_date.desc()",
+        # order_by="CaptureLoad.creation_date.desc()"
     )
-    notes: Optional[list["Note"]] = Relationship(
-        "Note", secondary="note_assoc_t", order_by="Note.last_modified.desc()"
+    timecode_ranges: list["TimecodeRange"] = Relationship(
+        back_populates="take",
+        # lazy="joined",
+        # order_by="TimecodeRange.creation_date.desc()",
     )
-    take_selects: Optional[list["TakeSelect"]] = Relationship(
-        back_populates="take", order_by="TakeSelect.creation_date.desc()"
+    notes: list["Note"] = Relationship(
+        back_populates="take",
+        # link_model="note_assoc_t",
+        # order_by="Note.last_modified.desc()"
     )
-    resources: Optional[list[Resource]] = Relationship(
-        link_model="resource_assoc_t", back_populates="takes"
+    take_selects: list["TakeSelect"] = Relationship(
+        back_populates="take",
+        # order_by="TakeSelect.creation_date.desc()"
+    )
+    resources: list["Resource"] = Relationship(
+        # link_model="resource_assoc_t",
+        back_populates="takes"
     )

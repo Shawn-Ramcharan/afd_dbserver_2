@@ -1,15 +1,17 @@
 import uuid
 import enum
 from sqlalchemy import Enum as SqlaEnum
-from typing import Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.schema import UniqueConstraint
+from sqlalchemy.schema import UniqueConstraint, PrimaryKeyConstraint
 from datetime import datetime, date
 from sqlmodel import Session as DbSession
 from sqlmodel import (SQLModel, Field, Relationship, Column, select)
 from .mixin import IdMixin, BaseMixin, AttrMixin, ProjectScopedDataMixin, ProjectScopedAssocMixin
 from .project import Project
 
+if TYPE_CHECKING:
+    from .take_select import TakeSelect
 
 class ETakeSelectListType(enum.Enum):
     order = "order"
@@ -27,10 +29,10 @@ class TakeSelectListAssoc(IdMixin, SQLModel, table=True):
             name="pk_take_select_list_assoc_t",
         ),
     )
-    take_select_list_id = Field(foreign_key="take_select_list_t.id")
-    take_select_list: TakeSelectList = Relationship()
-    take_select_id = Field(foreign_key="take_select_t.id")
-    take_select: TakeSelect = Relationship()
+    take_select_list_id: uuid.UUID = Field(foreign_key="take_select_list_t.id")
+    take_select_list: "TakeSelectList" = Relationship()
+    take_select_id: uuid.UUID = Field(foreign_key="take_select_t.id")
+    take_select: "TakeSelect" = Relationship()
 
 class TakeSelectList(
     BaseMixin,
@@ -76,9 +78,9 @@ class TakeSelectList(
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Optional[Project] = Relationship(
         back_populates="take_select_lists")
-    take_selects: TakeSelect = Relationship(
-        link_model="take_select_list_assoc_t",
+    take_selects: "TakeSelect" = Relationship(
+        # link_model="take_select_list_assoc_t",
         back_populates="take_select_lists",
     )
-    PROJECT_ASSOC_CLS = TakeSelectListAssoc
-    PROJECT_CLS_ATTR = "take_select_list_id"
+    PROJECT_ASSOC_CLS: ClassVar = TakeSelectListAssoc
+    PROJECT_CLS_ATTR: ClassVar = "take_select_list_id"
