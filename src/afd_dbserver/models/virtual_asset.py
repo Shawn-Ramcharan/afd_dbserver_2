@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import Enum as SqlaEnum
+from sqlalchemy import ARRAY, Text
 from datetime import datetime, date
 from sqlmodel import Session as DbSession
 from sqlmodel import (SQLModel, Field, Relationship, Column, distinct, select)
@@ -32,7 +33,7 @@ class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table
         name="virtual_asset_code_project_uix"),
     )
     code: str = Field(max_length=32, nullable=False)
-    client_name: Optional[str] = Field(max_digits=128)
+    client_name: Optional[str] = Field(max_digits=128, default=None)
     type_: EVirtualAssetType = Field(
         sa_column=Column(SqlaEnum(EVirtualAssetType, name='evirtualassettype'), nullable=False)
     )
@@ -59,7 +60,7 @@ class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDat
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship()
     number: int = Field(nullable=False, ge=1)
-    # tags: Optional[list[str]] = Field(default=None)
+    tags: Optional[list[str]] = Field(default=None, sa_column=Column('tags', ARRAY(Text())))
     virtual_asset_id: uuid.UUID = Field(foreign_key="virtual_asset_t.id", nullable=False)
     virtual_asset: VirtualAsset = Relationship(
         back_populates="revisions",
@@ -67,11 +68,15 @@ class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDat
     )
     source_mappings: list["Mapping"] = Relationship(
         back_populates="source",
-        sa_relationship_kwargs=dict(primaryjoin="VirtualAssetRevision.id==Mapping.source_id")
+        sa_relationship_kwargs={
+            "primaryjoin": "VirtualAssetRevision.id==Mapping.source_id"
+        }
     )
     target_mappings: list["Mapping"] = Relationship(
         back_populates="target",
-        sa_relationship_kwargs=dict(primaryjoin="VirtualAssetRevision.id==Mapping.target_id")
+        sa_relationship_kwargs={
+            "primaryjoin": "VirtualAssetRevision.id==Mapping.target_id"
+        }
     )
     resources: list["Resource"] = Relationship(
         link_model=ResourceAssoc,

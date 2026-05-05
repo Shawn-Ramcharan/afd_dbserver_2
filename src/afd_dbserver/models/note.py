@@ -43,8 +43,8 @@ class Note(
     __tablename__ = "note_t"
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship()
-    text: str = Field()
-    auther: str = Field(max_length=128)
+    text: Optional[str] = Field(default=None)
+    author: Optional[str] = Field(max_length=128, default=None)
     type_: ENoteType = Field(
         sa_column=Column(SqlaEnum(ENoteType, name="enoteype"), nullable=False)
     )

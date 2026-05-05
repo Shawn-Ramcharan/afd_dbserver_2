@@ -23,16 +23,20 @@ class Volume(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMod
     )
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: "Project" = Relationship()
-    code: uuid.UUID = Field(max_length=32, nullable=False)
+    code: str = Field(max_length=32, nullable=False)
     session_id: uuid.UUID = Field(foreign_key="session_t.id", nullable=False)
     session: Optional["Session"] = Relationship(back_populates="volumes")
     devices: list["Device"] = Relationship(
         back_populates="volume",
-        # order_by="Device.code.asc()"
+        sa_relationship_kwargs={
+            "order_by": "Device.code.asc()"
+        }
     )
     capture_loads: list["CaptureLoad"] = Relationship(
         back_populates="volume",
-        # order_by=desc(text("capture_load_t.creation_date")),
+        sa_relationship_kwargs={
+            "order_by": "capture_load_t.creation_date.desc()",
+        }
     )
     resources: list["Resource"] = Relationship(
         link_model=ResourceAssoc,

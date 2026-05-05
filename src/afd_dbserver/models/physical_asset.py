@@ -31,7 +31,7 @@ class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
     type_: EPhysicalAssetType = Field(
         sa_column=Column(SqlaEnum(EPhysicalAssetType,name='ephysicalassettype'))
     )
-    subject_id: str = Field(max_length=128, unique=True)
+    subject_id: Optional[str] = Field(default=None, max_length=128, unique=True)
     solver_setups: "SolverSetup" = Relationship(back_populates="physical_asset")
 
     @classmethod

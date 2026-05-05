@@ -33,14 +33,13 @@ class Session(
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Optional[Project] = Relationship(back_populates="sessions")
     name: str = Field(max_length=128, nullable=False, index=True)
-    description: str = Field(max_length=1024)
-    # NOTE: Change to date object later!!
-    shoot_date: datetime = Field(
+    description: Optional[str] = Field(default=None, max_length=1024)
+    shoot_date: Optional[date] = Field(
         default_factory=utcnow
     )  # should be stored in timezone=UTC
-    timecode_rate: str = Field(max_length=32)
+    timecode_rate: Optional[str] = Field(default="TCRate_30", max_length=32)
     sample_rate: float = Field(default=30.0, ge=0.0)
-    folder: str = Field()
+    folder: Optional[str] = Field(default=None)
     location_id: uuid.UUID = Field(foreign_key="location_t.id", nullable=False)
     location: Optional[Location] = Relationship(back_populates="sessions")
     volumes: list["Volume"] = Relationship(

@@ -26,8 +26,8 @@ class TimecodeRange(
 ):
     __tablename__ = "timecode_range_t"
     tc_in: str = Field(max_length=32, nullable=False, default="00:00:00:00")
-    tc_out: Optional[str] = Field(max_length=32)
-    tc_rate: str = Field(max_length=32, nullable=False, default="")
+    tc_out: Optional[str] = Field(default=None, max_length=32)
+    tc_rate: str = Field(max_length=32, nullable=False, default="TCRate_30")
     type_: ETimecodeRangeType = Field(
         sa_column=Column(
             SqlaEnum(ETimecodeRangeType, name="etimecoderangetype"), nullable=False
@@ -35,7 +35,7 @@ class TimecodeRange(
     )
     frame_count: Optional[int] = Field(default=0, ge=0)
     description: Optional[str] = Field()
-    take_id: uuid.UUID = Field(foreign_key="take_t.id")
+    take_id: Optional[uuid.UUID] = Field(foreign_key="take_t.id", default=None)
     take: "Take" = Relationship(back_populates="timecode_ranges")
     PROJECT_PARENT_CLS: ClassVar = "Take"
     PROJECT_CLS_ATTR: ClassVar = "take_id"

@@ -13,7 +13,6 @@ from .resource import Resource, ResourceAssoc
 if TYPE_CHECKING:
     from .virtual_asset import VirtualAssetRevision
 
-
 class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
     """Describes a relationship between a source skeleton and a target
     skeleton, used for retargeting motion. Many-to-Many
@@ -25,8 +24,8 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
             "name", "source_id", "target_id", name="mapping_name_source_target_uix"
         ),
     )
-    name: str = Field(max_length=128)
-    fqn: str = Field(max_length=256)
+    name: Optional[str] = Field(default="default", max_length=128)
+    fqn: Optional[str] = Field(max_length=256)
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship()
     source_id: uuid.UUID = Field(

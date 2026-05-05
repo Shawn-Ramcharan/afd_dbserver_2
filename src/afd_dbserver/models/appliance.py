@@ -36,8 +36,8 @@ class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
     type_: EApplianceType = Field(
         sa_column=Column(SqlaEnum(EApplianceType,name='eappliancetype'), nullable=False)
     )
-    name: Optional[str] = Field(default="", max_length=128)
-    serial_number: Optional[str] = Field(default="", index=True)
+    name: Optional[str] = Field(default=None, max_length=128)
+    serial_number: Optional[str] = Field(default=None, index=True)
     is_active: Optional[bool] = Field(default=True)
 
     @classmethod

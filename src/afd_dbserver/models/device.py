@@ -24,6 +24,7 @@ class Device(BaseMixin, AttrMixin, ProjectScopedDataMixin, ResourceMixin, SQLMod
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship()
     code: str = Field(max_length=32, nullable=False)
+    timecode_rate: Optional[str] = Field(default="TCRate_30", max_length=32)
     sample_rate: Optional[float] = Field(default=30.0)
     appliance_id: uuid.UUID = Field(foreign_key="appliance_t.id")
     appliance: Appliance = Relationship()

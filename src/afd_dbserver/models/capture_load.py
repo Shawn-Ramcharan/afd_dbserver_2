@@ -1,10 +1,12 @@
 import uuid
 from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.schema import UniqueConstraint
+from sqlalchemy import ARRAY, Text
 from sqlmodel import (
     SQLModel,
     Field,
     Relationship,
+    Column
 )
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .project import Project
@@ -21,10 +23,10 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship()
     name: str = Field(max_length=128)
-    # tags: Optional[list[str]] = Field(default=None)
-    volume_id: Optional[uuid.UUID] = Field(foreign_key="volume_t.id")
+    tags: Optional[list[str]] = Field(default=None, sa_column=Column('tags', ARRAY(Text())))
+    volume_id: Optional[uuid.UUID] = Field(default=None, foreign_key="volume_t.id")
     volume: Optional["Volume"] = Relationship(back_populates="capture_loads")
-    take_id: Optional[uuid.UUID] = Field(foreign_key="take_t.id")
+    take_id: Optional[uuid.UUID] = Field(default=None, foreign_key="take_t.id")
     take: Optional["Take"] = Relationship(back_populates="capture_loads")
     entries: list["CaptureLoadEntry"] = Relationship(
         back_populates="capture_load",

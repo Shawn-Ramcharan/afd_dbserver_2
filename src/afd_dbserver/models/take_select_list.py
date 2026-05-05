@@ -68,7 +68,7 @@ class TakeSelectList(
             name="take_select_list_project_id_name_type_uix",
         ),
     )
-    name: str = Field(max_length=128)
+    name: Optional[str] = Field(default=None, max_length=128)
     type_: ETakeSelectListType = Field(
         sa_column=Column(
             SqlaEnum(ETakeSelectListType, name="etakeselectlisttype"), nullable=False
@@ -79,7 +79,7 @@ class TakeSelectList(
     project: Optional[Project] = Relationship(
         back_populates="take_select_lists")
     take_selects: "TakeSelect" = Relationship(
-        # link_model="take_select_list_assoc_t",
+        link_model=TakeSelectListAssoc,
         back_populates="take_select_lists",
     )
     PROJECT_ASSOC_CLS: ClassVar = TakeSelectListAssoc
