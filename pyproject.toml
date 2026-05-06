@@ -36,6 +36,9 @@ server = [
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[project.entry-points]
+paste.app_factory = "app:app"
+
 [project.urls]
 Homepage = "https://github.com/animatrik/afd_dbserver"
 Issues = "https://github.com/animatrik/afd_dbserver"
