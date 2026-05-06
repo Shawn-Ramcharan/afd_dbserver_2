@@ -3,7 +3,7 @@ import uuid
 from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint, PrimaryKeyConstraint
-from sqlalchemy import ARRAY, Text
+from sqlalchemy import ARRAY, Text, String
 from datetime import datetime, date
 from sqlmodel import Column, Session as DbSession
 from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
@@ -157,4 +157,15 @@ class Item(BaseMixin, AttrMixin, SQLModel, table=True):
     location_hash: Optional[bytes] = Field(
         default=None, unique=True, index=True, nullable=False
     )
-    # location_: Optional[str] = Field(max_length=512, sa_column=Column("_location"), default=None)
+    location: Optional[str] = Field(
+        max_length=512,
+        default=None,
+        sa_column=Column('_location', String(512))
+    )
+    versions: list[Version] = Relationship(
+        link_model=ResourceAssoc,
+        back_populates="item",
+        sa_relationship_kwargs={
+            "viewonly": True
+        }
+    )
