@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from datetime import datetime, date
-from sqlmodel import Session as DbSession
+from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
 from .resource_mixin import ResourceMixin
@@ -42,3 +42,9 @@ class Volume(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMod
         link_model=ResourceAssoc,
         back_populates="volume"
     )
+
+    def delete(self, dbsession: DBSession):
+        for device in self.devices:
+            device.delete(dbsession)
+        self.delete_resources(dbsession)
+        dbsession.delete(self)

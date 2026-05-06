@@ -48,6 +48,7 @@ class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDat
     """ """
 
     OFFICIAL: ClassVar = "official"
+    CLS_ID_ATTR: ClassVar = "virtual_asset_revision_id"
 
     __tablename__ = "virtual_asset_revision_t"
     __table_args__ = (

@@ -29,7 +29,7 @@ class BaseMixin(IdMixin):
     """BaseMixin"""
 
     created_by: str = Field(nullable=False)
-    creation_date: datetime = Field(
+    creation_date: Optional[datetime] = Field(
         # sa_type=DateTime(timezone=True),
         default_factory=utcnow,
         nullable=False,
@@ -38,19 +38,20 @@ class BaseMixin(IdMixin):
         # }
     )
     modified_by: str = Field(nullable=False)
-    last_modified: datetime = Field(
+    last_modified: Optional[datetime] = Field(
         # sa_type=DateTime(timezone=True),
+        default_factory=utcnow,
         nullable=False,
-        sa_column_kwargs={
-            # "server_default": utcnow,
-            "onupdate": utcnow
-        },
+        # sa_column_kwargs={
+        #     # "server_default": utcnow,
+        #     "onupdate": utcnow
+        # },
     )
 
     @classmethod
     def create(cls, payload: SQLModel, dbsession: Session):
         model = cls.model_validate(payload)
-        model.set_creation_stamp(None)
+        model.set_creation_stamp(dbsession)
         dbsession.add(model)
         dbsession.commit()
         dbsession.refresh(model)
@@ -64,21 +65,25 @@ class BaseMixin(IdMixin):
             return None
         for field, value in model_data.model_dump().items():
             setattr(model, field, value)
+        model.update_stamp(dbsession)
         dbsession.commit()
         dbsession.refresh(model)
         return model
 
-    def set_creation_stamp(self, request):
-        pass
+    def set_creation_stamp(self, dbsession: Session):
         # track the creating user
         # self.created_by = request.authenticated_userid
         # self.modified_by = request.authenticated_userid
+        self.created_by = "shawn"
+        self.modified_by = "shawn"
 
-    def update_stamp(self, request):
-        pass
+    def update_stamp(self, dbsession: Session):
         # track the modifying user
         # self.modified_by = request.authenticated_userid
+        self.modified_by = "shawn"
 
+    def delete(self, dbsession: Session):
+        raise NotImplementedError()
 
 class AttrMixin(SQLModel):
     """Extra Attributes to add in database."""

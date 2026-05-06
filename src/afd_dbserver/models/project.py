@@ -8,6 +8,7 @@ from sqlmodel import (
     select
 )
 from .mixin import BaseMixin, AttrMixin
+from .resource_mixin import ResourceMixin
 
 if TYPE_CHECKING:
     from .take import Take
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
     from .session import Session
     from .resource import Resource
 
-class Project(BaseMixin, AttrMixin, SQLModel, table=True):
+class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
     """Project Table.
     """
     __tablename__ = "project_t"

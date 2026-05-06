@@ -6,6 +6,7 @@ from sqlmodel import (
     Field,
     Relationship,
 )
+from sqlmodel import Session as DBSession
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
@@ -34,3 +35,9 @@ class Device(BaseMixin, AttrMixin, ProjectScopedDataMixin, ResourceMixin, SQLMod
         link_model=ResourceAssoc,
         back_populates="device"
     )
+
+    def delete(self, dbsession: DBSession):
+        self.delete_resources(dbsession)
+        dbsession.delete(self)
+        dbsession.commit()
+

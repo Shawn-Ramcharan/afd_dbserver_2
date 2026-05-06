@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 class TakeSelect(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
     """ 
     """
+
+    CLS_ID_ATTR: ClassVar = "take_select_id"
     __tablename__ = "take_select_t"
     __table_args__ = (UniqueConstraint(
         'take_id', 'timecode_range_id', name='take_select_take_timecode_range_uix'), 

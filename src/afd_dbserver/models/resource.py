@@ -32,12 +32,21 @@ class ResourceAssoc(IdMixin, SQLModel, table=True):
     __tablename__ = "resource_assoc_t"
     resource_id: uuid.UUID = Field(foreign_key="resource_t.id", unique=True)
     resource: "Resource" = Relationship()
+    # =======================
+    # NOTE: this is not for saying this resource is
+    # project scoped. this is just for associating
+    # resource to the project since projects can have
+    # resources against it. Treat this attr/relationship
+    # like any other attrs in the table like solver_setup_id,
+    # mapping_id, etc.
     project_id: Optional[uuid.UUID] = Field(foreign_key="project_t.id", default=None)
     project: Project = Relationship()
+    # =======================
     solver_setup_id: Optional[uuid.UUID] = Field(foreign_key="solver_setup_t.id", default=None)
     solver_setup: "SolverSetup" = Relationship()
     virtual_asset_revision_id: Optional[uuid.UUID] = Field(
-        foreign_key="virtual_asset_revision_t.id"
+        foreign_key="virtual_asset_revision_t.id",
+        default=None
     )
     virtual_asset_revision: "VirtualAssetRevision" = Relationship()
     mapping_id: Optional[uuid.UUID] = Field(foreign_key="mapping_t.id", default=None)

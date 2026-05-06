@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from sqlmodel import Session as DbSession
@@ -19,6 +19,7 @@ class SolverSetup(
     source virtual asset that they are solved onto using motion capture.
     """
 
+    CLS_ID_ATTR: ClassVar = "solver_setup_id"
     __tablename__ = "solver_setup_t"
     __table_args__ = (
         UniqueConstraint(
