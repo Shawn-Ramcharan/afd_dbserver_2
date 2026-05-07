@@ -140,13 +140,12 @@ class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDat
         tags: list[str] | None = None,
         attrs: dict[str, Any] | None = None
     ):
-        if self.tags is None:
-            self.tags = []
         if tags is not None:
-            for tag in tags:
-                if tag in self.tags:
-                    continue
-                self.tags.append(tag)
+            if self.tags is None:
+                self.tags = []
+            if self.OFFICIAL in self.tags:
+                tags.append(self.OFFICIAL)
+            self.tags = tags
         if attrs is not None:
             self.merge_attrs(attrs)
         self.update_stamp(dbsession)

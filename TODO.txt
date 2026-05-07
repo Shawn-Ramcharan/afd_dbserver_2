@@ -1,3 +1,12 @@
-[] Clean up args for DBsession.
-[] Get back to TakeSelectList place order functions.
-[] Clean up imports
+* = WIP (currently working on)
+x = finished working on (the task will also be removed)
+_ = has not started yet
+
+[*] wip on afd_dbserver.models.capture_load.CaptureLoad functions
+[_] Clean up args for DBsession.
+[_] Get back to TakeSelectList place order functions.
+[_] Clean up imports
+[_] Create API
+[_] Work on authentication functionality
+[_] Test with AssetBrowser and/or NSB
+[_] Create unittest
