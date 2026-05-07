@@ -82,38 +82,41 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
         self.tags.append(self.LIVE)
         dbsession.commit()
 
-    def update_tags(self, dbsession: DBSession, tags: list[str]):
+    def update_tags(self, tags: list[str]):
         if self.tags is None:
             self.tags = []
         if self.LIVE in self.tags:
             tags.append(self.LIVE)
         self.tags = tags
-        dbsession.commit()
 
-    # TODO: Update the rest of Capture load functions
-
-    def update(self, request, params):
-        self.__check_single_owner(params)
-        if "is_live" in params:
-            if self.volume_id is None:
-                raise HTTPBadRequest("The 'live' tag can only be set on CaptureLoad objects owned by a Volume.")
-            self.set_as_live(request)
-            del params["is_live"]
-        # update attributes
-        for key in params:
-            if not hasattr(self, key):
-                continue
-            if key=="attrs":
-                self.merge_attrs(params[key])
-            elif key=="tags":
-                self.update_tags(params[key])
+    @classmethod
+    def update(
+        cls,
+        id: uuid.UUID,
+        payload: SQLModel,
+        dbsession: DBSession,
+        is_live: bool = False
+    ):
+        cls._check_single_owner(payload)
+        cpl_ = cls.get_by_id(id, dbsession)
+        if is_live is True:
+            if cpl_.volume is None:
+                raise BadRequestError(
+                    "The 'live' tag can only be set on CaptureLoad objects owned by a Volume.")
+            cpl_.set_as_live(dbsession)
+        for field, value in payload.model_dump().items():
+            if hasattr(payload, "attrs"):
+                cpl_.merge_attrs(payload.attrs)
+            elif hasattr(payload, "tags"):
+                cpl_.update_tags(payload.tags)
             else:
-                if key == "take_id":
-                    self.volume = None
-                elif key == "volume_id":
-                    self.take = None
-                setattr(self, key, params[key])
-        self.update_stamp(request)
+                setattr(cpl_, field, value)
+        cpl_.update_stamp(dbsession)
+        dbsession.commit()
+        dbsession.refresh(cpl_)
+        return cpl_
+
+    # TODO: Continue Work on CaptureLoad DB Functions
 
     def copy_cpl(self, request, target, enabled_entries_only=False):
         if self.attrs is not None:
