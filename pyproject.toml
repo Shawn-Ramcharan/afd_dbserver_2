@@ -19,6 +19,7 @@ dependencies = [
   "sqlmodel",
   "fastapi",
   "jinja2",
+  "afd_timecode>=0.4.1",
 ]
 
 [project.optional-dependencies]

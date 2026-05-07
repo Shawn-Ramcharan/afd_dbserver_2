@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 import uuid
 from datetime import datetime, timezone
 from sqlmodel import (Session, SQLModel, Field, JSON, select, delete)
@@ -82,14 +82,19 @@ class BaseMixin(IdMixin):
         # self.modified_by = request.authenticated_userid
         self.modified_by = "shawn"
 
-    def delete(self, dbsession: Session):
-        raise NotImplementedError()
-
 class AttrMixin(SQLModel):
     """Extra Attributes to add in database."""
 
     attrs: Optional[dict] = Field(default=None, sa_type=JSON)
 
+    def merge_attrs(self, attrs: dict[str, Any]):
+        if self.attrs is None:
+            self.attrs = {}
+        for key, value in attrs.items():
+            if value is None and key in self.attrs:
+                self.attrs.pop(key)
+            else:
+                self.attrs.update({key: value})
 
 class ProjectScopedDataMixin(object):
 

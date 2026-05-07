@@ -21,11 +21,9 @@ from .take_select import TakeSelect
 from .take_select_list import TakeSelectList, TakeSelectListAssoc
 from .resource import ResourceAssoc, Resource, Version, VersionLink, Item, ItemAssoc
 
-
 DB_ENGINE_URL = "postgresql+psycopg2://dbadmin:EightTimesEight=64@178.15.0.17:5432/afd_dev"
 
 engine = create_engine(DB_ENGINE_URL, echo=True)
-
 
 # Recommended naming convention used by Alembic, as various different database
 # providers will autogenerate vastly different names making migrations more

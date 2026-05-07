@@ -11,7 +11,6 @@ from .resource import (
     Item,
     ItemAssoc
 )
-
 LOG = logging.getLogger("afd_dbserver")
 
 class ResourceMixin(object):

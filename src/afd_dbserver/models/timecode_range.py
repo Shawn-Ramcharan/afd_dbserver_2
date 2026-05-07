@@ -1,12 +1,12 @@
 import uuid
 import enum
 from typing import TYPE_CHECKING, ClassVar, Optional
-from sqlalchemy.exc import NoResultFound
-from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import Enum as SqlaEnum
-from sqlmodel import Session as DbSession
-from sqlmodel import (SQLModel, Field, Relationship, Column, distinct, select)
+from sqlmodel import Session as DBSession
+from sqlmodel import (SQLModel, Field, Relationship, Column)
+from afd_timecode import Timecode
 from .mixin import BaseMixin, AttrMixin, ProjectScopedParentMixin
+from ..exc import NotFoundError, BadRequestError
 
 if TYPE_CHECKING:
     from .take import Take
@@ -39,3 +39,52 @@ class TimecodeRange(
     take: "Take" = Relationship(back_populates="timecode_ranges")
     PROJECT_PARENT_CLS: ClassVar = "Take"
     PROJECT_CLS_ATTR: ClassVar = "take_id"
+
+    @classmethod
+    def create(cls, payload: SQLModel, dbsession: DBSession):
+        if payload.take_id is not None:
+            cls.check_capture_status(dbsession, payload.take_id)
+        timecode_ = Timecode()
+        timecode_.set_from_string(payload.tc_in, payload.tc_rate)
+        payload.frame_count = timecode_.frames
+        model = super(TimecodeRange, cls).create(payload, dbsession)
+        return model
+
+    @staticmethod
+    def check_capture_status(dbsession: DBSession, take_id: uuid.UUID | None):
+        if take_id is None:
+            return None
+        from .take import Take
+        take = Take.get_by_id(take_id, dbsession)
+        if not take:
+            raise NotFoundError(f"No Take with id={take_id} was found.")
+        for tc_range in take.timecode_ranges:
+            if tc_range.type_ == ETimecodeRangeType.capture:
+                raise BadRequestError(
+                    "There is already a TimecodeRange with 'capture' "
+                    f"status associated with this Take: {tc_range}"
+                )
+
+    def copy_tc(self, dbsession: DBSession, take_id: uuid.UUID | None = None):
+        tc_range_copy = TimecodeRange(
+            tc_in=self.tc_in,
+            tc_out=self.tc_out,
+            tc_rate=self.tc_rate,
+            type_=self.type_,
+            description=self.description,
+            attrs=self.attrs,
+            take_id=take_id,
+            created_by="shawn",
+            modified_by="shawn"
+        )
+        dbsession.add(tc_range_copy)
+        dbsession.commit()
+        return tc_range_copy
+
+    @classmethod
+    def update(cls, id: uuid.UUID, payload: SQLModel, dbsession: DBSession):
+        tc_range = TimecodeRange.get_by_id(id, dbsession)
+        tc_range.check_capture_status(dbsession, payload.take_id)
+        tc_range.merge_attrs(payload.attrs)
+        model = BaseMixin.update(id, tc_range, dbsession)
+        return model
