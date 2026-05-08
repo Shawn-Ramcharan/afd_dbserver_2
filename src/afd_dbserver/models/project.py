@@ -1,14 +1,15 @@
 from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
+from sqlmodel import Session as DBSession
 from sqlmodel import (
     SQLModel,
-    Session,
     Field,
     Relationship,
     select
 )
 from .mixin import BaseMixin, AttrMixin
 from .resource_mixin import ResourceMixin
+from ..exc import NotFoundError
 
 if TYPE_CHECKING:
     from .take import Take
@@ -41,7 +42,7 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
     @classmethod
     def get_all(
             cls,
-            dbsession: Session,
+            dbsession: DBSession,
             client_code: Optional[str] = None,
             is_active: Optional[bool] = True
     ):
@@ -56,7 +57,7 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
     @classmethod
     def get_all_clients(
             cls,
-            dbsession: Session,
+            dbsession: DBSession,
             is_active: Optional[bool] = True
     ):
         projects = select(cls)
@@ -73,9 +74,9 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
         return list(clients.values())
 
     @classmethod
-    def get_by_code(cls, dbsession: Session, code: str):
+    def get_by_code(cls, dbsession: DBSession, code: str):
         try:
             return dbsession.exec(select(cls).where(cls.code == code)).one()
         except NoResultFound:
-            return None
+            raise NotFoundError(f"{cls.__name__} with code {code} not found.")
 

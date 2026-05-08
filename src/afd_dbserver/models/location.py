@@ -1,8 +1,8 @@
 from typing import Optional
 from sqlalchemy.exc import NoResultFound
+from sqlmodel import Session as DBSession
 from sqlmodel import (
     SQLModel,
-    Session,
     Field,
     Relationship,
     select
@@ -19,11 +19,11 @@ class Location(BaseMixin, AttrMixin, SQLModel, table=True):
     sessions: list["Session"] = Relationship(back_populates="location")
 
     @classmethod
-    def get_all(cls, dbsession: Session):
+    def get_all(cls, dbsession: DBSession):
         return dbsession.exec(select(cls).order_by(cls.code.asc())).all()
 
     @classmethod
-    def get_by_code(cls, dbsession: Session, code: str):
+    def get_by_code(cls, dbsession: DBSession, code: str):
         try:
             return dbsession.exec(select(cls).where(cls.code == code)).one()
         except NoResultFound:

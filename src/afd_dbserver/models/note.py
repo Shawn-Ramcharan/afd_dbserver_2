@@ -2,9 +2,11 @@ import uuid
 import enum
 from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy import Enum as SqlaEnum
+from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, Column)
 from .mixin import IdMixin, BaseMixin, AttrMixin, ProjectScopedDataMixin, ProjectScopedAssocMixin
 from .project import Project
+from ..exc import BadRequestError
 
 if TYPE_CHECKING:
     from .take import Take
@@ -61,3 +63,31 @@ class Note(
         back_populates="notes"
     )
     PROJECT_ASSOC_CLS: ClassVar = NoteAssoc
+
+    def create(cls, payload: SQLModel, dbsession: DBSession):
+        note_ = super(Note, cls).create(payload, dbsession)
+        take_id = getattr(payload, "take_id", None)
+        session_id = getattr(payload, "session_id", None)
+        take_select_id = getattr(payload, "take_select_id", None)
+        if take_id:
+            session_id, take_select_id = None, None
+        elif session_id:
+            take_id, take_select_id = None, None
+        elif take_select_id:
+            session_id, take_id = None, None
+        else:
+            raise BadRequestError("either take_id, session_id, "
+                "take_select_id need to be set for Note")
+        note_assoc = NoteAssoc(
+            note_id=note_.id,
+            take_id=take_id,
+            session_id=session_id,
+            take_select_id=take_select_id
+        )
+        dbsession.add(note_assoc)
+        dbsession.commit()
+        return note_
+
+    # def delete(self, request):
+    #     request.dbsession.delete(self)
+

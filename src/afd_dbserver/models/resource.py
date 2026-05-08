@@ -117,9 +117,6 @@ class Resource(
         link_model=ResourceAssoc
     )
 
-
-
-
     PROJECT_ASSOC_CLS: ClassVar = ResourceAssoc
 
 

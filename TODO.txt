@@ -2,9 +2,10 @@
 x = finished working on (the task will also be removed)
 _ = has not started yet
 
-[*] wip on afd_dbserver.models.capture_load.CaptureLoad functions
-[*] wip on afd_dbserver.models.mapping.Mapping functions
-[_] Clean up args for DBsession.
+[x] wip on afd_dbserver.models.capture_load.CaptureLoad functions
+[x] wip on afd_dbserver.models.mapping.Mapping functions
+[*] wip on afd_dbserver.models.take.Take functions
+[*] Clean up args for DBsession.
 [_] Get back to TakeSelectList place order functions.
 [_] Clean up imports
 [_] Create API

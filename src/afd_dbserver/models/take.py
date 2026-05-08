@@ -3,13 +3,15 @@ import enum
 from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Enum as SqlaEnum
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy import ARRAY, Text 
+from sqlalchemy import ARRAY, Text
+from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, Field, Column)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .resource import Resource, ResourceAssoc
 from .note import Note, NoteAssoc
+from ..exc import NotFoundError
 
 if TYPE_CHECKING:
     from .take_select import TakeSelect
@@ -90,3 +92,53 @@ class Take(
         link_model=ResourceAssoc,
         back_populates="take"
     )
+
+    # TODO: work on Take functions
+
+    @classmethod
+    def get_all(cls, , project_id):
+        from afd_dbserver.models.validators import TakeStatusValidator, TakeTypeValidator
+        query = request.dbsession.query(cls).join(Project).filter(Project.id==project_id)
+        if "omit_status" in request.params:
+            omit_status_filters = request.params.getall("omit_status")
+            for status in omit_status_filters:
+                validator = TakeStatusValidator()
+                status = validator.to_python(status)
+                query = query.filter(cls.status!=status)
+        if "type" in request.params:
+            type_param = request.params.get("type")
+            validator = TakeTypeValidator()
+            type_ = validator.to_python(type_param)
+            LOG.debug("Filtering by take type: %s"%type_)
+            query = query.filter(cls.type_==type_)
+        return query.order_by(cls.creation_date.desc()).all()
+
+    @classmethod
+    def get_by_name(cls, request, project_id, name):
+        try:
+            return request.dbsession.query(cls).filter(and_(cls.project_id==project_id, cls.name==name)).one()
+        except NoResultFound:
+            raise HTTPNotFound("No Take found with project_id={0} and name={1}".format(project_id, name))
+
+    @classmethod
+    def get_by_slates(cls, request, project_id, slates):
+        return request.dbsession.query(cls).filter(and_(cls.project_id==project_id,cls.slate.in_(slates))).order_by(desc(cls.name)).all()
+
+    @classmethod
+    def get_all_slates(cls, request, project_id):
+        take_types = request.params.getall("types")
+        query = request.dbsession.query(distinct(cls.slate)).filter(cls.project_id==project_id)
+        if take_types is not None:
+            query = query.filter(cls.type_.in_(take_types))
+        return [s[0] for s in query.all()]
+
+    @classmethod
+    def get_next_take_from_slate(cls, request, project_id, slate):
+        query = request.dbsession.query(cls.number).filter(and_(cls.project_id==project_id, cls.slate==slate))
+        results = query.all()
+        if len(results) == 0:
+            return 1
+        highest_value = sorted([v[0] for v in query.all()])[-1]
+        return highest_value+1
+
+

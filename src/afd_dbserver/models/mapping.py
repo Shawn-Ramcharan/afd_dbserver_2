@@ -1,10 +1,9 @@
 import uuid
 from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint
-from datetime import datetime, date
-from sqlmodel import Session as DbSession
-from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
+from sqlalchemy.schema import UniqueConstraint
+from sqlmodel import Session as DBSession
+from sqlmodel import (SQLModel, Field, Relationship, select)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
@@ -62,7 +61,7 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
         return f"{source_.virtual_asset.code}_r{source_.number}_to_{target_.virtual_asset.code}_r{target_.number}"
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: Session):
+    def create(cls, payload: SQLModel, dbsession: DBSession):
         # determine the fully-qualified-name (fqn)
         try:
             source_ = VirtualAssetRevision.get_by_id(payload.source_id, dbsession)
@@ -78,43 +77,40 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
         return cls.get_all_by_project(dbsession, project_id)
         # return request.dbsession.query(cls).join(Project).filter(Project.id==project_id).order_by(desc(cls.creation_date)).all()
 
-    # TODO: continue with updating functions
-
     @classmethod
-    def get(cls, request, params):
-        query = request.dbsession.query(Mapping).filter(and_(Mapping.source_id==params["source_id"], Mapping.target_id==params["target_id"],Mapping.name==params["name"]))
+    def get(
+        cls,
+        dbsession: DBSession,
+        source_id: uuid.UUID,
+        target_id: uuid.UUID,
+        name: str
+    ):
+        stmt = select(Mapping).where(
+            Mapping.source_id == source_id,
+            Mapping.target_id == target_id,
+            Mapping.name == name
+        )
         try:
-            return query.one()
-        
+            return dbsession.exec(stmt).one()
         except NoResultFound:
-            raise HTTPNotFound("No Mapping matching parameters source_id={0}, target_id={1}, name={2} found.".format(params["source_id"], params["target_id"], params["name"]))
+            raise NotFoundError(f"No Mapping matching parameters "
+                f"source_id={source_id}, "
+                f"target_id={target_id}, "
+                f"name={name} found.")
 
-    def update(self, request, params):
-        if 'source_id' in params or 'target_id' in params:
-            if 'source_id' in params:
-                try:
-                    self.source = VirtualAssetRevision.get_by_id(request, params["source_id"])
-                except NoResultFound as err:
-                    raise HTTPNotFound(err)
-                LOG.debug("Source: %s"%self.source)
-            if 'target_id' in params:
-                try:
-                    self.target = VirtualAssetRevision.get_by_id(request, params["target_id"])
-                except NoResultFound as err:
-                    raise HTTPNotFound(err)
-                LOG.debug("Target: %s"%self.target)
-            fqn = "%s_r%d_to_%s_r%d"%(self.source.virtual_asset.code, self.source.number, self.target.virtual_asset.code, self.target.number)
-            params["fqn"] = fqn
-        # update attributes
-        for key in params:
-            if not hasattr(self, key):
-                continue
-            if key=="attrs":
-                self.merge_attrs(params[key])
+    def update(cls, id_: uuid.UUID, payload: SQLModel, dbsession: DBSession):
+        source_id = getattr(payload, "source_id", None)
+        target_id = getattr(payload, "target_id", None)
+        cur_mapping = cls.get_by_id(id_, dbsession)
+        if source_id or target_id:
+            if source_id:
+                source_ = VirtualAssetRevision.get_by_id(source_id, dbsession)
             else:
-                setattr(self, key, params[key])
-        self.update_stamp(request)
-        request.dbsession.flush()
-
-
-
+                source_ = cur_mapping.source
+            if target_id:
+                target_ = VirtualAssetRevision.get_by_id(target_id, dbsession)
+            else:
+                target_ = cur_mapping.target
+            fqn_ = cls.get_fqn_string(source_, target_)
+            setattr(payload, "fqn", fqn_)
+        return super(Mapping, cls).update(id_, payload, dbsession)

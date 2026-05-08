@@ -1,8 +1,10 @@
 from typing import Any, Optional
 import uuid
 from datetime import datetime, timezone
-from sqlmodel import (Session, SQLModel, Field, JSON, select, delete, desc)
-
+from sqlalchemy.exc import NoResultFound
+from sqlmodel import Session as DBSession
+from sqlmodel import (SQLModel, Field, JSON, select, delete, desc)
+from ..exc import NotFoundError
 
 def utcnow():
     """Returns the current time in UTC."""
@@ -21,10 +23,12 @@ class IdMixin(SQLModel):
     )
 
     @classmethod
-    def get_by_id(cls, id_: uuid.UUID, dbsession: Session):
+    def get_by_id(cls, id_: uuid.UUID, dbsession: DBSession):
         # return dbsessionn.get(cls, id)
-        return dbsession.exec(select(cls).where(cls.id == id_)).one()
-
+        try:
+            return dbsession.exec(select(cls).where(cls.id == id_)).one()
+        except NoResultFound:
+            raise NotFoundError(f"{cls.__name__} with {id_=} not found.")
 
 class BaseMixin(IdMixin):
     """BaseMixin"""
@@ -50,7 +54,7 @@ class BaseMixin(IdMixin):
     )
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: Session):
+    def create(cls, payload: SQLModel, dbsession: DBSession):
         model = cls.model_validate(payload)
         model.set_creation_stamp(dbsession)
         dbsession.add(model)
@@ -59,7 +63,7 @@ class BaseMixin(IdMixin):
         return model
 
     @classmethod
-    def update(cls, id_: uuid.UUID, payload: SQLModel, dbsession: Session):
+    def update(cls, id_: uuid.UUID, payload: SQLModel, dbsession: DBSession):
         model = cls.get_by_id(id_, dbsession)
         model_data = cls.model_validate(payload)
         if not model:
@@ -71,14 +75,14 @@ class BaseMixin(IdMixin):
         dbsession.refresh(model)
         return model
 
-    def set_creation_stamp(self, dbsession: Session):
+    def set_creation_stamp(self, dbsession: DBSession):
         # track the creating user
         # self.created_by = request.authenticated_userid
         # self.modified_by = request.authenticated_userid
         self.created_by = "shawn"
         self.modified_by = "shawn"
 
-    def update_stamp(self, dbsession: Session):
+    def update_stamp(self, dbsession: DBSession):
         # track the modifying user
         # self.modified_by = request.authenticated_userid
         self.modified_by = "shawn"
@@ -102,7 +106,7 @@ class AttrMixin(SQLModel):
 class ProjectScopedDataMixin(object):
 
     @classmethod
-    def get_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
+    def get_all_by_project(cls, dbsession: DBSession, project_id: uuid.UUID):
         dbsession.expire_all()
         stmt = (
             select(cls)
@@ -113,14 +117,14 @@ class ProjectScopedDataMixin(object):
         return data_
 
     @classmethod
-    def get_all_ids_by_project(cls, dbsession: Session, project_id: uuid.UUID):
+    def get_all_ids_by_project(cls, dbsession: DBSession, project_id: uuid.UUID):
         dbsession.expire_all()
         stmt = select(cls.id).where(cls.project_id == project_id)
         data_ = dbsession.scalars(stmt).unique().all()
         return data_
 
     @classmethod
-    def delete_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
+    def delete_all_by_project(cls, dbsession: DBSession, project_id: uuid.UUID):
         rows_affected = dbsession.exec(
             delete(cls).where(cls.project_id == project_id)
         ).rowcount
@@ -134,7 +138,7 @@ class ProjectScopedAssocMixin(object):
     PROJECT_CLS_ATTR = None
 
     @classmethod
-    def get_all_assoc_by_project(cls, dbsession: Session, project_id: uuid.UUID):
+    def get_all_assoc_by_project(cls, dbsession: DBSession, project_id: uuid.UUID):
         dbsession.expire_all()
         project_data_ids = cls.get_all_ids_by_project(dbsession, project_id)
         if cls.PROJECT_CLS_ATTR is None:
@@ -149,7 +153,7 @@ class ProjectScopedAssocMixin(object):
         return data_
 
     @classmethod
-    def delete_all_assoc_by_project(cls, dbsession: Session, project_id: uuid.UUID):
+    def delete_all_assoc_by_project(cls, dbsession: DBSession, project_id: uuid.UUID):
         dbsession.expire_all()
         project_data_ids = cls.get_all_ids_by_project(dbsession, project_id)
         if cls.PROJECT_CLS_ATTR is None:
@@ -170,7 +174,7 @@ class ProjectScopedParentMixin(object):
     PROJECT_CLS_ATTR = None
 
     @classmethod
-    def get_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
+    def get_all_by_project(cls, dbsession: DBSession, project_id: uuid.UUID):
         dbsession.expire_all()
         parent_data_ids = cls.PROJECT_PARENT_CLS.get_all_ids_by_project(
             dbsession, project_id
@@ -185,7 +189,7 @@ class ProjectScopedParentMixin(object):
         return data_
 
     @classmethod
-    def delete_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
+    def delete_all_by_project(cls, dbsession: DBSession, project_id: uuid.UUID):
         parent_data_ids = cls.PROJECT_PARENT_CLS.get_all_ids_by_project(
             dbsession, project_id
         )

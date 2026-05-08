@@ -2,10 +2,9 @@ import enum
 from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy import Enum as SqlaEnum
-from sqlalchemy.schema import UniqueConstraint
+from sqlmodel import Session as DBSession
 from sqlmodel import (
     SQLModel,
-    Session,
     Column,
     Field,
     Relationship,
@@ -13,6 +12,7 @@ from sqlmodel import (
 )
 from .mixin import BaseMixin, AttrMixin
 from .project import Project
+from ..exc import NotFoundError
 
 if TYPE_CHECKING:
     from .solver_setup import SolverSetup
@@ -37,22 +37,22 @@ class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
     @classmethod
     def get_all(
         cls,
-        dbsession: Session,
+        dbsession: DBSession,
         type_: Optional[EPhysicalAssetType] = None,
-        project: Optional[Project] = None
+        project_id: Optional[uuid.UUID] = None
     ):
-        physical_assets = select(cls)
-        if project is not None:
-            # TODO: implement when SolverSetups is implemented
-            # physical_assets = physical_assets.join(SolverSetup).filter(SolverSetup.project_id==project.id)
-            return []
+        stmt = select(cls)
+        if project_id is not None:
+            stmt = select(SolverSetup).where(
+                SolverSetup.project_id == project_id
+            )
         if type_ is not None:
-            physical_assets = physical_assets.where(cls.type_ == type_)
-        return dbsession.exec(physical_assets).all()
+            stmt = stmt.where(cls.type_ == type_)
+        return dbsession.exec(stmt).all()
 
     @classmethod
-    def get_by_code(cls, dbsession: Session, code: str):
+    def get_by_code(cls, dbsession: DBSession, code: str):
         try:
             return dbsession.exec(select(cls).where(cls.code == code)).one()
         except NoResultFound:
-            return None
+            raise NotFoundError(f"{cls.__name__} with code {code} not found.")

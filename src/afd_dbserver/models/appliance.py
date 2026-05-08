@@ -3,9 +3,9 @@ from typing import Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy import Enum as SqlaEnum
 from sqlalchemy.schema import UniqueConstraint
+from sqlmodel import Session as DBSession
 from sqlmodel import (
     SQLModel,
-    Session,
     Column,
     Field,
     select
@@ -43,7 +43,7 @@ class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
     @classmethod
     def get_all(
         cls,
-        dbsession: Session,
+        dbsession: DBSession,
         type_: Optional[EApplianceType] = None,
         include_inactive: bool = False
     ):
@@ -56,7 +56,7 @@ class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
         return dbsession.exec(appliances).all()
 
     @classmethod
-    def get_by_code(cls, dbsession: Session, code: str):
+    def get_by_code(cls, dbsession: DBSession, code: str):
         try:
             return dbsession.exec(select(cls).where(cls.code == code)).one()
         except NoResultFound:
