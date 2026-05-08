@@ -77,7 +77,10 @@ class Resource(
     group: str = Field(max_length=64, nullable=False)
     uri: Optional[str] = Field(max_length=256)
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
-    project: "Project" = Relationship()
+    project: "Project" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
     versions: list["Version"] = Relationship(
         back_populates="resource"
     )
