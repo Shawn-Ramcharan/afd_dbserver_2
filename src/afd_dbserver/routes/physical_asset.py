@@ -13,7 +13,7 @@ from ..models import get_session
 from ..models.physical_asset import PhysicalAsset, EPhysicalAssetType
 from ..models.project import Project
 
-router = APIRouter()
+router = APIRouter(prefix="/physical_assets", tags=["physical_assets"])
 
 @router.get("", response_model=list[PhysicalAsset])
 def get_all_physical_asset(

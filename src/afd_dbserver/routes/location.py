@@ -11,7 +11,7 @@ from sqlmodel import (
 from ..models import get_session
 from ..models.location import Location
 
-router = APIRouter()
+router = APIRouter(prefix="/locations", tags=["locations"])
 
 @router.get("", response_model=list[Location])
 def get_all_location(dbsession: Session = Depends(get_session)):

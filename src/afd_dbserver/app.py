@@ -8,10 +8,10 @@ from afd_dbserver.routes import (
 
 app = FastAPI()
 
-app.include_router(project.router, prefix="/projects", tags=["projects"])
-app.include_router(location.router, prefix="/locations", tags=["locations"])
-app.include_router(appliance.router, prefix="/appliances", tags=["appliances"])
-app.include_router(physical_asset.router, prefix="/physical_assets", tags=["physical_assets"])
+app.include_router(project.router)
+app.include_router(location.router)
+app.include_router(appliance.router)
+app.include_router(physical_asset.router)
 
 # @app.get("/projects", response_model=list[Any])
 # def home_page():

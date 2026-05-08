@@ -12,7 +12,7 @@ from sqlmodel import (
 from ..models import get_session
 from ..models.project import Project
 
-router = APIRouter()
+router = APIRouter(prefix="/projects", tags=["projects"])
 
 @router.get("", response_model=list[Project])
 def get_all_project(

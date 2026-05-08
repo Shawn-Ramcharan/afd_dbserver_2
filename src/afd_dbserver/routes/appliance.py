@@ -12,7 +12,7 @@ from sqlmodel import (
 from ..models import get_session
 from ..models.appliance import Appliance, EApplianceType
 
-router = APIRouter()
+router = APIRouter(prefix="/appliances", tags=["appliances"])
 
 @router.get("", response_model=list[Appliance])
 def get_all_appliance(
