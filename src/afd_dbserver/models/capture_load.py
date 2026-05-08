@@ -1,5 +1,7 @@
 import uuid
+import logging
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import ARRAY, Text
 from sqlmodel import Session as DBSession
@@ -12,11 +14,14 @@ from sqlmodel import (
 )
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .project import Project
-from ..exc import BadRequestError
+from ..exc import BadRequestError, NotFoundError
+from .resource import Version
+
 if TYPE_CHECKING:
     from .take import Take
     from .volume import Volume
 
+LOG = logging.getLogger(__name__)
 
 class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
 
@@ -39,7 +44,7 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     @classmethod
     def create(cls, payload: SQLModel, dbsession: DBSession):
         cls._check_single_owner(payload)
-        super(CaptureLoad, cls).create(payload, dbsession)
+        model = super(CaptureLoad, cls).create(payload, dbsession)
         return model
 
     @classmethod
@@ -92,13 +97,13 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     @classmethod
     def update(
         cls,
-        id: uuid.UUID,
+        id_: uuid.UUID,
         payload: SQLModel,
         dbsession: DBSession,
         is_live: bool = False
     ):
         cls._check_single_owner(payload)
-        cpl_ = cls.get_by_id(id, dbsession)
+        cpl_ = cls.get_by_id(id_, dbsession)
         if is_live is True:
             if cpl_.volume is None:
                 raise BadRequestError(
@@ -116,49 +121,53 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
         dbsession.refresh(cpl_)
         return cpl_
 
-    # TODO: Continue Work on CaptureLoad DB Functions
-
-    def copy_cpl(self, request, target, enabled_entries_only=False):
+    def copy_cpl(
+        self,
+        dbsession: DBSession,
+        target_owner: Any,
+        enabled_entries_only: bool = False
+    ):
+        # Get Current Attrs
+        attrs = {}
         if self.attrs is not None:
-            attrs = copy.deepcopy(self.attrs)
-        else:
-            attrs = {}
-        attrs["copied_from"] = str(self.id)
-        kwargs = {
-            "project":self.project,
-            "name":self.name,
-            "volume_id":None,
-            "take_id":None,
-            "attrs":attrs
-        }
-        if target is not None:
-            if target.__class__.__name__ == "Volume":
-                kwargs["volume_id"] = target.id
-            elif target.__class__.__name__ == "Take":
-                kwargs["take_id"] = target.id
-        new_capture_load = self.__class__(**kwargs)
-        new_capture_load.set_creation_stamp(request)
-        if new_capture_load.attrs:
-            new_capture_load.attrs.update({"copied_from":str(self.id)})
-        else:
-            new_capture_load.attrs = {"copied_from":str(self.id)}
-        # copy the tags, but not the "live" tag.  This has special meaning for the stage.
-        tags = self.tags
-        if 'live' in tags:
-            tags.remove("live")
-        new_capture_load.tags = tags
-        request.dbsession.add(new_capture_load)
-        request.dbsession.flush()
+            attrs = self.attrs.copy()
+        attrs.update({"copied_from": str(self.id)})
+        # Get Target Id
+        take_id = None
+        volume_id = None
+        if target_owner is not None:
+            if target_owner.__class__.__name__ == "Volume":
+                volume_id = target_owner.id
+            elif target_owner.__class__.__name__ == "Take":
+                take_id = target_owner.id
+        tags = self.tags or []
+        if self.LIVE in tags:
+            tags.remove(self.LIVE)
+        payload = SQLModel(
+            project_id=self.project.id,
+            name=self.name,
+            take_id=take_id,
+            volume_id=volume_id,
+            attrs=attrs,
+            tags=tags,
+            created_by="shawn",
+            modified_by="shawn"
+        )
+        new_capture_load = self.__class__.create(payload, dbsession)
         # copy the entries
         for entry in self.entries:
-            if enabled_entries_only:
-                if entry.is_enabled:
-                    entry.copy(request, new_capture_load)
-            else:
-                entry.copy(request, new_capture_load)
-        request.dbsession.flush()
+            if enabled_entries_only is True and entry.is_enabled is False:
+                continue
+            entry.copy_cple(dbsession, new_capture_load)
+        dbsession.commit()
         return new_capture_load
 
+    # def delete_cpl(self, dbsession: DBSession):
+    #     # LOG.debug("Deleting CaptureLoad: {0}".format(self.id))
+    #     entries = reversed(self.entries)
+    #     for entry in entries:
+    #         entry.delete(request)
+    #     dbsession.delete(self)
 
 class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
     """ """
@@ -172,20 +181,156 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
     solver_setup_id: Optional[uuid.UUID] = Field(
         foreign_key="solver_setup_t.id", default=None
     )
-    solver_setup: Optional["SolverSetup"] = Relationship()
+    solver_setup: "SolverSetup" = Relationship()
     mapping_id: Optional[uuid.UUID] = Field(
         foreign_key="mapping_t.id", default=None)
-    mapping: Optional["Mapping"] = Relationship()
+    mapping: "Mapping" = Relationship()
     index: Optional[int] = Field(nullable=False, ge=1)
     is_enabled: Optional[bool] = Field(default=True)
     has_body: Optional[bool] = Field(default=True)
     has_facial: Optional[bool] = Field(default=False)
     has_fingers: Optional[bool] = Field(default=False)
-    versions: Optional[list["CaptureLoadEntryVersion"]] = Relationship(
+    versions: list["CaptureLoadEntryVersion"] = Relationship(
         back_populates="capture_load_entry",
         # order_by="CaptureLoadEntryVersion.name.asc()",
     )
 
+    @classmethod
+    def get_next_index(cls, capture_load_id: uuid.UUID, dbsession: DBSession):
+        stmt = select(CaptureLoadEntry).where(
+            CaptureLoadEntry.capture_load_id == capture_load_id
+        )
+        index = dbsession.exec(stmt).count()
+        return index
+
+    @classmethod
+    def create(cls, payload: SQLModel, dbsession: DBSession):
+        index = cls.get_next_index(payload.capture_load_id, dbsession)
+        payload.index = index
+        model = super(CaptureLoadEntry, cls).create(payload, dbsession)
+        return model
+
+    def copy_cple(self, dbsession: DBSession, capture_load: CaptureLoad):
+        attrs = {}
+        if self.attrs is not None:
+            attrs = self.attrs.copy()
+        attrs.update({"copied_from": str(self.id)})
+        payload = SQLModel(
+            project_id=capture_load.project.id,
+            capture_load_id=capture_load.id,
+            solver_setup_id =self.solver_setup_id,
+            mapping_id=self.mapping_id,
+            index=self.index,
+            is_enabled=self.is_enabled,
+            has_body=self.has_body,
+            has_fingers=self.has_fingers,
+            has_facial=self.has_facial,
+            attrs=attrs
+        )
+        copied_entry = self.__class__.create(payload, dbsession)
+        # copy the associated versions
+        for version in self.versions:
+            version.copy_cplev(dbsession, copied_entry)
+        return copied_entry
+
+    # def update_(self, request, params):
+    #      # check for index change
+    #     if "index" in params:
+    #         orig_index = self.index # 1
+    #         target_index = params["index"] # 0
+    #         entries = self.capture_load.entries
+    #         if target_index>=len(entries):
+    #             raise HTTPBadRequest("CaptureLoadEntry index is greater than entry list length: {0}>{1}".format(target_index,len(entries)))
+    #         for entry in entries:
+    #             if entry.id == self.id:
+    #                 continue
+    #             entry_index = entry.index
+    #             if entry_index > orig_index:
+    #                 # shift left
+    #                 entry_index -= 1
+    #             if entry_index >= target_index:
+    #                 # shift right
+    #                 entry_index += 1
+    #             if entry_index != entry.index:
+    #                 LOG.debug("Moving entry %d to %d (%s)"%(entry.index, entry_index, entry))
+    #                 entry.index = entry_index
+    #     # update attributes
+    #     for key in params:
+    #         if not hasattr(self, key):
+    #             continue
+    #         if key=="attrs":
+    #             self.merge_attrs(params[key])
+    #         else:
+    #             LOG.debug("Setting {0} to {1}".format(key, params[key]))
+    #             setattr(self, key, params[key])
+    #     self.update_stamp(request)
+    #     flag_dirty(self.capture_load)
+
+    # def delete(self, request):
+    #     LOG.debug("Deleting CaptureLoadEntry: {0}".format(self.id))
+    #     indexToDelete = self.index
+    #     self.index=-1
+    #     # update indices of sibling entries
+    #     for sibling in self.capture_load.entries:
+    #         if sibling.index > indexToDelete:
+    #             sibling.index -= 1
+    #     versions = self.versions
+    #     for version in versions:
+    #         version.delete(request)
+    #     request.dbsession.delete(self)
+
+    def add_or_update_version(
+        self,
+        dbsession: DBSession,
+        name: str,
+        version: Any, # Should be Version
+        attrs: dict
+    ):
+        paylaod = SQLModel(
+            project_id=version.project.id,
+            capture_load_entry_id=self.id,
+            name=name,
+            version_id=version.id,
+            attrs=attrs
+        )
+        try:
+            cle_version = self.get_version_by_name(dbsession, name)
+            LOG.debug("Updating {0} record with id={1}".format(cle_version.__class__.__name__, cle_version.id))
+            self.__class__.update(cle_version.id, paylaod, dbsession)
+        except NotFoundError:
+            cle_version = self.__class__.create(paylaod, dbsession)
+            LOG.debug("Created new {0} record with id={1}".format(cle_version.__class__.__name__, cle_version.id))
+        return cle_version
+
+    def get_version_by_name(self, dbsession: DBSession, name: str):
+        stmt = select(CaptureLoadEntryVersion).where(
+            CaptureLoadEntryVersion.capture_load_entry_id == self.id,
+            CaptureLoadEntryVersion.name == name
+        )
+        try:
+            cle_version = dbsession.scalar(stmt).one()
+            return cle_version
+        except NoResultFound:
+            raise NotFoundError(f"No CPLE Version with name={name} found for CPLE <{self.id}>.")
+
+    def remove_version(self, dbsession: DBSession, cle_version_id: uuid.UUID):
+        LOG.debug('"{0}"'.format(cle_version_id))
+        cle_version = CaptureLoadEntryVersion.get_by_id(cle_version_id, dbsession)
+        LOG.debug(cle_version)
+        if not cle_version:
+            raise NotFoundError("No CaptureLoadEntryVersion with id={0} was found.".format(cle_version_id))
+        LOG.debug("Removing {0} from {1}".format(cle_version, self))
+        dbsession.delete(cle_version)
+        dbsession.commit()
+
+    def remove_version_by_name(self, dbsession: DBSession, name: str):
+        cle_version = self.get_version_by_name(dbsession, name)
+        LOG.debug("Removing {0} from {1}".format(cle_version, self))
+        dbsession.delete(cle_version)
+        dbsession.commit()
+
+    def __repr__(self):
+        return "<%s : %d. %s>"%(self.__class__.__name__, self.index, self.id)
 
 class CaptureLoadEntryVersion(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
     __tablename__ = "capture_load_entry_version_t"
@@ -206,4 +351,22 @@ class CaptureLoadEntryVersion(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLM
         #order_by="CaptureLoadEntryVersion.name.asc()"
     )
     version_id: uuid.UUID = Field(foreign_key="version_t.id", nullable=False)
-    version: "Version" = Relationship()
+    version: Version = Relationship()
+
+    def copy_cplv(self, dbsession: DBSession, capture_load_entry: CaptureLoadEntry):
+        payload = SQLModel(
+            project_id=capture_load_entry.project.id,
+            capture_load_entry_id=capture_load_entry.id,
+            name=self.name,
+            version_id=self.version.id,
+            attrs=self.attrs
+        )
+        copied_cplev = self.__class__.create(payload, dbsession)
+        dbsession.add(copied_cplev)
+        dbsession.commit()
+        return copied_cplev
+
+    # def delete(self, request):
+    #     LOG.debug("Deleting CaptureLoadEntryVersion: {0}".format(self.id))
+    #     request.dbsession.delete(self)
+
