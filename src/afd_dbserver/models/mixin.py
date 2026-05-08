@@ -22,8 +22,8 @@ class IdMixin(SQLModel):
 
     @classmethod
     def get_by_id(cls, id: uuid.UUID, dbsession: Session):
+        # return dbsessionn.get(cls, id)
         return dbsession.exec(select(cls).where(cls.id == id)).one()
-
 
 class BaseMixin(IdMixin):
     """BaseMixin"""
@@ -58,8 +58,8 @@ class BaseMixin(IdMixin):
         return model
 
     @classmethod
-    def update(cls, id: uuid.UUID, payload: SQLModel, dbsession: Session):
-        model = cls.get_by_id(id, dbsession)
+    def update(cls, id_: uuid.UUID, payload: SQLModel, dbsession: Session):
+        model = cls.get_by_id(id_, dbsession)
         model_data = cls.model_validate(payload)
         if not model:
             return None
@@ -114,7 +114,7 @@ class ProjectScopedDataMixin(object):
 
     @classmethod
     def delete_all_by_project(cls, dbsession: Session, project_id: str):
-        rows_affected = dbsession.execute(
+        rows_affected = dbsession.exec(
             delete(cls).where(cls.project_id == project_id)
         ).rowcount
         dbsession.expire_all()
@@ -150,7 +150,7 @@ class ProjectScopedAssocMixin(object):
         else:
             cls_attr_id = cls.PROJECT_CLS_ATTR
         assoc_id_column = getattr(cls.PROJECT_ASSOC_CLS, cls_attr_id)
-        rows_affected = dbsession.execute(
+        rows_affected = dbsession.exec(
             delete(cls.PROJECT_ASSOC_CLS).where(assoc_id_column.in_(project_data_ids))
         ).rowcount
         dbsession.expire_all()
@@ -187,7 +187,7 @@ class ProjectScopedParentMixin(object):
         else:
             cls_attr_id = cls.PROJECT_CLS_ATTR
         cls_parent_cls_id_column = getattr(cls, cls_attr_id)
-        rows_affected = dbsession.execute(
+        rows_affected = dbsession.exec(
             delete(cls).where(cls_parent_cls_id_column.in_(parent_data_ids))
         ).rowcount
         dbsession.expire_all()
