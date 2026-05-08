@@ -1,7 +1,7 @@
 from typing import Any, Optional
 import uuid
 from datetime import datetime, timezone
-from sqlmodel import (Session, SQLModel, Field, JSON, select, delete)
+from sqlmodel import (Session, SQLModel, Field, JSON, select, delete, desc)
 
 
 def utcnow():
@@ -21,9 +21,10 @@ class IdMixin(SQLModel):
     )
 
     @classmethod
-    def get_by_id(cls, id: uuid.UUID, dbsession: Session):
+    def get_by_id(cls, id_: uuid.UUID, dbsession: Session):
         # return dbsessionn.get(cls, id)
-        return dbsession.exec(select(cls).where(cls.id == id)).one()
+        return dbsession.exec(select(cls).where(cls.id == id_)).one()
+
 
 class BaseMixin(IdMixin):
     """BaseMixin"""
@@ -82,6 +83,7 @@ class BaseMixin(IdMixin):
         # self.modified_by = request.authenticated_userid
         self.modified_by = "shawn"
 
+
 class AttrMixin(SQLModel):
     """Extra Attributes to add in database."""
 
@@ -96,12 +98,17 @@ class AttrMixin(SQLModel):
             else:
                 self.attrs.update({key: value})
 
+
 class ProjectScopedDataMixin(object):
 
     @classmethod
     def get_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
         dbsession.expire_all()
-        stmt = select(cls).where(cls.project_id == project_id)
+        stmt = (
+            select(cls)
+            .where(cls.project_id == project_id)
+            .order_by(desc(cls.creation_date))
+        )
         data_ = dbsession.scalars(stmt).unique().all()
         return data_
 
