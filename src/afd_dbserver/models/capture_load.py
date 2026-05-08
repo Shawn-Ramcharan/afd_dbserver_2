@@ -37,7 +37,7 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     )
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: Session):
+    def create(cls, payload: SQLModel, dbsession: DBSession):
         cls._check_single_owner(payload)
         super(CaptureLoad, cls).create(payload, dbsession)
         return model

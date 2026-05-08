@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .take_select import TakeSelect
     from .virtual_asset import VirtualAsset
     from .session import Session
-    from .resource import Resource
+from .resource import Resource, ResourceAssoc
 
 class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
     """Project Table.
@@ -33,7 +33,10 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
     takes: list["Take"] = Relationship()# order_by="Take.creation_date.desc()")
     take_selects: list["TakeSelect"] = Relationship()#"TakeSelect")
     take_select_lists: list["TakeSelectList"] = Relationship()# order_by="TakeSelectList.last_modified.desc()")
-    resources: list["Resource"] = Relationship(back_populates="projects")#secondary="resource_assoc_t")
+    resources: list[Resource] = Relationship(
+        link_model=ResourceAssoc,
+        back_populates="project"
+    )
 
     @classmethod
     def get_all(

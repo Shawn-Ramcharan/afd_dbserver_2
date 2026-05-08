@@ -116,8 +116,8 @@ class TakeSelectList(
                 TakeSelectList.project_id == project_id,
                 TakeSelectList.type_ == type_
             )
-        results = dbsession.exec(stmt.order_by(
-            TakeSelectList.last_modified.desc())).all()
+        results = dbsession.exec(stmt).all()#.order_by(
+            # TakeSelectList.last_modified.desc())).all()
         return results
 
     def add_take_selects(self, dbsession: DBSession, take_select_ids: list[uuid.UUID]):

@@ -63,30 +63,30 @@ class Take(
     capture_loads: list["CaptureLoad"] = Relationship(
         back_populates="take",
         sa_relationship_kwargs={
-            "order_by": "CaptureLoad.creation_date.desc()"
+            # "order_by": "CaptureLoad.creation_date.desc()"
         }
     )
     timecode_ranges: list["TimecodeRange"] = Relationship(
         back_populates="take",
         sa_relationship_kwargs={
             "lazy": "joined",
-            "order_by": "TimecodeRange.creation_date.desc()",
+            # "order_by": "TimecodeRange.creation_date.desc()",
         }
     )
     notes: list["Note"] = Relationship(
         back_populates="take",
         link_model=NoteAssoc,
         sa_relationship_kwargs={
-            "order_by": "Note.last_modified.desc()"
+            # "order_by": "Note.last_modified.desc()"
         }
     )
     take_selects: list["TakeSelect"] = Relationship(
         back_populates="take",
         sa_relationship_kwargs={
-            "order_by": "TakeSelect.creation_date.desc()"
+            # "order_by": "TakeSelect.creation_date.desc()"
         }
     )
     resources: list["Resource"] = Relationship(
         link_model=ResourceAssoc,
-        back_populates="takes"
+        back_populates="take"
     )

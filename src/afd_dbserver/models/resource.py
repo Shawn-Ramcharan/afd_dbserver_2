@@ -1,4 +1,4 @@
-from __future__ import annotations
+# from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from .solver_setup import SolverSetup
     from .take_select import TakeSelect
     from .device import Device
+    from .virtual_asset import VirtualAssetRevision
 
 
 class ResourceAssoc(IdMixin, SQLModel, table=True):
@@ -40,7 +41,7 @@ class ResourceAssoc(IdMixin, SQLModel, table=True):
     # like any other attrs in the table like solver_setup_id,
     # mapping_id, etc.
     project_id: Optional[uuid.UUID] = Field(foreign_key="project_t.id", default=None)
-    project: Project = Relationship()
+    project: "Project" = Relationship()
     # =======================
     solver_setup_id: Optional[uuid.UUID] = Field(foreign_key="solver_setup_t.id", default=None)
     solver_setup: "SolverSetup" = Relationship()
@@ -76,7 +77,46 @@ class Resource(
     group: str = Field(max_length=64, nullable=False)
     uri: Optional[str] = Field(max_length=256)
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
-    project: Project = Relationship()
+    project: "Project" = Relationship()
+    versions: list["Version"] = Relationship(
+        back_populates="resource"
+    )
+    virtual_asset_revision: "VirtualAssetRevision" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
+    mapping: "Mapping" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
+    session: "Session" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
+    solver_setup: "SolverSetup" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
+    device: "Device" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
+    take: "Take" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
+    take_select: "TakeSelect" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
+    volume: "Volume" = Relationship(
+        back_populates="resources",
+        link_model=ResourceAssoc
+    )
+
+
+
+
     PROJECT_ASSOC_CLS: ClassVar = ResourceAssoc
 
 
@@ -92,23 +132,25 @@ class Version(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True
     is_committed: Optional[bool] = Field(default=False)
     uri: Optional[str] = Field(max_length=256)
     resource_id: uuid.UUID = Field(foreign_key="resource_t.id", nullable=False)
-    resource: "Resource" = Relationship(back_populates="versions")
+    resource: Resource = Relationship(back_populates="versions")
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
-    project: Project = Relationship()
-    outgoing_links: list[VersionLink] = Relationship(
-        back_populates="from_version",
-        # link_model=VersionLink,
-        sa_relationship_kwargs={
-            "foreign_keys": ["VersionLink.from_version_id"],
-        }
-    )
-    incoming_links: list[VersionLink] = Relationship(
-        back_populates="to_version",
-        # link_model=VersionLink,
-        sa_relationship_kwargs={
-            "foreign_keys": ["VersionLink.to_version_id"],
-        }
-    )
+    project: "Project" = Relationship()
+    # outgoing_links: list["VersionLink"] = Relationship(
+    #     back_populates="from_version",
+    #     # foreign_key="from_version_id"
+    #     # link_model=VersionLink,
+    #     sa_relationship_kwargs={
+    #         "foreign_keys": ["from_version_id"],
+    #     }
+    # )
+    # incoming_links: list["VersionLink"] = Relationship(
+    #     back_populates="to_version",
+    #     # foreign_keys=["to_version_id"]
+    #     # link_model=VersionLink,
+    #     sa_relationship_kwargs={
+    #         # "foreign_keys": ["to_version_id"],
+    #     }
+    # )
 
 
 class VersionLink(BaseMixin, AttrMixin, ProjectScopedParentMixin, SQLModel, table=True):
@@ -123,21 +165,21 @@ class VersionLink(BaseMixin, AttrMixin, ProjectScopedParentMixin, SQLModel, tabl
     )
     name: str = Field(max_length=1024)
     from_version_id: uuid.UUID = Field(foreign_key="version_t.id", nullable=False)
-    from_version: Version = Relationship(
-        back_populates="outgoing_links",
-        link_model=Version,
-        sa_relationship_kwargs={
-            "foreign_keys": ["from_version_id"]
-        }
-    )
+    # from_version: Version = Relationship(
+    #     back_populates="outgoing_links",
+    #     link_model=Version,
+    #     sa_relationship_kwargs={
+    #         # "foreign_keys": ["from_version_id"]
+    #     }
+    # )
     to_version_id: uuid.UUID = Field(foreign_key="version_t.id", nullable=False)
-    to_version: Version = Relationship(
-        back_populates="incoming_links",
-        link_model=Version,
-        sa_relationship_kwargs={
-            "foreign_keys": ["to_version_id"]
-        }
-    )
+    # to_version: Version = Relationship(
+    #     back_populates="incoming_links",
+    #     link_model=Version,
+    #     sa_relationship_kwargs={
+    #         # "foreign_keys": ["to_version_id"]
+    #     }
+    # )
     PROJECT_PARENT_CLS: ClassVar = Version
     PROJECT_CLS_ATTR: ClassVar = "to_version_id"
 
@@ -152,7 +194,7 @@ class ItemAssoc(IdMixin, ProjectScopedParentMixin, SQLModel, table=True):
     name: Optional[str] = Field(max_length=64)
     uri: Optional[str] = Field(max_length=256)
     version: Version = Relationship()
-    item: Item = Relationship(
+    item: "Item" = Relationship(
         sa_relationship_kwargs={
             "lazy": "joined"
         }
@@ -171,10 +213,10 @@ class Item(BaseMixin, AttrMixin, SQLModel, table=True):
         default=None,
         sa_column=Column('_location', String(512))
     )
-    versions: list[Version] = Relationship(
-        link_model=ResourceAssoc,
-        back_populates="item",
-        sa_relationship_kwargs={
-            "viewonly": True
-        }
-    )
+    # versions: list[Version] = Relationship(
+    #     link_model=ResourceAssoc,
+    #     back_populates="item",
+    #     sa_relationship_kwargs={
+    #         "viewonly": True
+    #     }
+    # )

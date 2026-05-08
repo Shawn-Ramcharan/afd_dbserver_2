@@ -1,6 +1,6 @@
 
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from datetime import datetime, date
@@ -53,7 +53,7 @@ class TakeSelect(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQ
         link_model=NoteAssoc,
         back_populates="take_select",
         sa_relationship_kwargs={
-            "order_by": "note_t.last_modified.desc()",
+            # "order_by": "note_t.last_modified.desc()",
         }
     )
     resources: list["Resource"] = Relationship(

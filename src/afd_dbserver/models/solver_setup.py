@@ -8,6 +8,7 @@ from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .physical_asset import PhysicalAsset
+from .resource import Resource, ResourceAssoc
 
 if TYPE_CHECKING:
     from .virtual_asset import VirtualAssetRevision
@@ -43,6 +44,7 @@ class SolverSetup(
         foreign_key="virtual_asset_revision_t.id", nullable=False
     )
     virtual_asset_revision: "VirtualAssetRevision" = Relationship()#lazy="joined")
-    # resources: "Resource" = Relationship(
-    #     link_model="resource_assoc_t", back_populates="solver_setup"
-    # )
+    resources: Resource = Relationship(
+        link_model=ResourceAssoc,
+        back_populates="solver_setup"
+    )

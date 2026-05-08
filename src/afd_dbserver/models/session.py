@@ -9,12 +9,11 @@ from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .location import Location
+from .note import Note, NoteAssoc
+from .resource import Resource, ResourceAssoc
 if TYPE_CHECKING:
     from .volume import Volume
     from .take import Take
-    from .note import Note
-    from .resource import Resource
-
 
 class Session(
     BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True
@@ -51,11 +50,13 @@ class Session(
         # order_by="Take.creation_date.desc()"
     )  # , order_by=desc(text("take_t.creation_date")))
     notes: list["Note"] = Relationship(
-        back_populates="note_assoc_t",
+        link_model=NoteAssoc,
+        back_populates="session",
         # order_by="Note.last_modified.desc()"
     )  # , order_by=desc(text("note_t.last_modified")) )
-    resources: list["Resource"] = Relationship(
-        back_populates="sessions",
+    resources: list[Resource] = Relationship(
+        link_model=ResourceAssoc,
+        back_populates="session",
         # link_model="resource_assoc_t"
     )
 

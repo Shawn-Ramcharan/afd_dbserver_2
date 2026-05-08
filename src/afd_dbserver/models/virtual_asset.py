@@ -99,27 +99,29 @@ class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDat
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship()
     number: int = Field(nullable=False, ge=1)
-    tags: Optional[list[str]] = Field(default=None, default_factory=list)#sa_column=Column('tags', ARRAY(Text())))
+    tags: Optional[list[str]] = Field(default=None, sa_column=Column('tags', ARRAY(Text())))
     virtual_asset_id: uuid.UUID = Field(foreign_key="virtual_asset_t.id", nullable=False)
     virtual_asset: VirtualAsset = Relationship(
         back_populates="revisions",
         sa_relationship_kwargs=dict(lazy="joined")
     )
-    source_mappings: list["Mapping"] = Relationship(
-        back_populates="source",
-        sa_relationship_kwargs={
-            "primaryjoin": "VirtualAssetRevision.id==Mapping.source_id"
-        }
-    )
-    target_mappings: list["Mapping"] = Relationship(
-        back_populates="target",
-        sa_relationship_kwargs={
-            "primaryjoin": "VirtualAssetRevision.id==Mapping.target_id"
-        }
-    )
-    resources: list["Resource"] = Relationship(
+    # source_mappings: list["Mapping"] = Relationship(
+    #     back_populates="source",
+    #     sa_relationship_kwargs={
+    #         "foreign_keys": "VirtualAssetRevision.id",
+    #         "primaryjoin": "VirtualAssetRevision.id==Mapping.source_id"
+    #     }
+    # )
+    # target_mappings: list["Mapping"] = Relationship(
+    #     back_populates="target",
+    #     sa_relationship_kwargs={
+    #         "foreign_keys": "VirtualAssetRevision.id",
+    #         "primaryjoin": "VirtualAssetRevision.id==Mapping.target_id"
+    #     }
+    # )
+    resources: list[Resource] = Relationship(
         link_model=ResourceAssoc,
-        back_populates="virtual_asset_revision"
+        back_populates="virtual_asset_revision",
     )
 
     def set_as_official(self, dbsession: DBSession):

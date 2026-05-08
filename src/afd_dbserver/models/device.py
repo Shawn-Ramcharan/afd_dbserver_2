@@ -31,7 +31,7 @@ class Device(BaseMixin, AttrMixin, ProjectScopedDataMixin, ResourceMixin, SQLMod
     appliance: Appliance = Relationship()
     volume_id: uuid.UUID = Field(foreign_key="volume_t.id", nullable=False)
     volume: "Volume" = Relationship(back_populates="devices")
-    resources: list["Resource"] = Relationship(
+    resources: list[Resource] = Relationship(
         link_model=ResourceAssoc,
         back_populates="device"
     )
