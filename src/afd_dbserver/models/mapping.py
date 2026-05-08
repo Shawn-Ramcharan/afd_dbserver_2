@@ -33,22 +33,24 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
         foreign_key="virtual_asset_revision_t.id",
         nullable=False,
     )
-    # source: "VirtualAssetRevision" = Relationship(
-    #     back_populates="source_mappings",
-    #     sa_relationship_kwargs={
-    #         "foreign_keys": "Mapping.source_id",
-    #         # "remote_side": [VirtualAssetRevision.id]
-    #     }
-    #  )
+    source: "VirtualAssetRevision" = Relationship(
+        back_populates="source_mappings",
+        sa_relationship_kwargs={
+            "foreign_keys": "Mapping.source_id",
+            "lazy": "joined"
+        }
+    )
     target_id: uuid.UUID = Field(
         foreign_key="virtual_asset_revision_t.id",
         nullable=False
     )
-    # target: "VirtualAssetRevision" = Relationship(
-    #     back_populates="target_mappings",
-    #     sa_relationship_kwargs={"foreign_keys": "Mapping.target_id"}
-    #     # lazy="joined"
-    # )
+    target: "VirtualAssetRevision" = Relationship(
+        back_populates="target_mappings",
+        sa_relationship_kwargs={
+            "foreign_keys": "Mapping.target_id",
+            "lazy": "joined"
+        }
+    )
     resources: list["Resource"] = Relationship(
         link_model=ResourceAssoc,
         back_populates="mapping"

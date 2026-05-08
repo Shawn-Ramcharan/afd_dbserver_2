@@ -105,20 +105,18 @@ class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDat
         back_populates="revisions",
         sa_relationship_kwargs=dict(lazy="joined")
     )
-    # source_mappings: list["Mapping"] = Relationship(
-    #     back_populates="source",
-    #     sa_relationship_kwargs={
-    #         "foreign_keys": "VirtualAssetRevision.id",
-    #         "primaryjoin": "VirtualAssetRevision.id==Mapping.source_id"
-    #     }
-    # )
-    # target_mappings: list["Mapping"] = Relationship(
-    #     back_populates="target",
-    #     sa_relationship_kwargs={
-    #         "foreign_keys": "VirtualAssetRevision.id",
-    #         "primaryjoin": "VirtualAssetRevision.id==Mapping.target_id"
-    #     }
-    # )
+    source_mappings: list["Mapping"] = Relationship(
+        back_populates="source",
+        sa_relationship_kwargs={
+            "primaryjoin": "VirtualAssetRevision.id==Mapping.source_id"
+        }
+    )
+    target_mappings: list["Mapping"] = Relationship(
+        back_populates="target",
+        sa_relationship_kwargs={
+            "primaryjoin": "VirtualAssetRevision.id==Mapping.target_id"
+        }
+    )
     resources: list[Resource] = Relationship(
         link_model=ResourceAssoc,
         back_populates="virtual_asset_revision",
