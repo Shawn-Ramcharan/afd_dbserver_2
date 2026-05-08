@@ -99,21 +99,21 @@ class AttrMixin(SQLModel):
 class ProjectScopedDataMixin(object):
 
     @classmethod
-    def get_all_by_project(cls, dbsession: Session, project_id: str):
+    def get_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
         dbsession.expire_all()
         stmt = select(cls).where(cls.project_id == project_id)
         data_ = dbsession.scalars(stmt).unique().all()
         return data_
 
     @classmethod
-    def get_all_ids_by_project(cls, dbsession: Session, project_id: str):
+    def get_all_ids_by_project(cls, dbsession: Session, project_id: uuid.UUID):
         dbsession.expire_all()
         stmt = select(cls.id).where(cls.project_id == project_id)
         data_ = dbsession.scalars(stmt).unique().all()
         return data_
 
     @classmethod
-    def delete_all_by_project(cls, dbsession: Session, project_id: str):
+    def delete_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
         rows_affected = dbsession.exec(
             delete(cls).where(cls.project_id == project_id)
         ).rowcount
@@ -127,7 +127,7 @@ class ProjectScopedAssocMixin(object):
     PROJECT_CLS_ATTR = None
 
     @classmethod
-    def get_all_assoc_by_project(cls, dbsession: Session, project_id: str):
+    def get_all_assoc_by_project(cls, dbsession: Session, project_id: uuid.UUID):
         dbsession.expire_all()
         project_data_ids = cls.get_all_ids_by_project(dbsession, project_id)
         if cls.PROJECT_CLS_ATTR is None:
@@ -142,7 +142,7 @@ class ProjectScopedAssocMixin(object):
         return data_
 
     @classmethod
-    def delete_all_assoc_by_project(cls, dbsession: Session, project_id: str):
+    def delete_all_assoc_by_project(cls, dbsession: Session, project_id: uuid.UUID):
         dbsession.expire_all()
         project_data_ids = cls.get_all_ids_by_project(dbsession, project_id)
         if cls.PROJECT_CLS_ATTR is None:
@@ -163,7 +163,7 @@ class ProjectScopedParentMixin(object):
     PROJECT_CLS_ATTR = None
 
     @classmethod
-    def get_all_by_project(cls, dbsession: Session, project_id: str):
+    def get_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
         dbsession.expire_all()
         parent_data_ids = cls.PROJECT_PARENT_CLS.get_all_ids_by_project(
             dbsession, project_id
@@ -178,7 +178,7 @@ class ProjectScopedParentMixin(object):
         return data_
 
     @classmethod
-    def delete_all_by_project(cls, dbsession: Session, project_id: str):
+    def delete_all_by_project(cls, dbsession: Session, project_id: uuid.UUID):
         parent_data_ids = cls.PROJECT_PARENT_CLS.get_all_ids_by_project(
             dbsession, project_id
         )
