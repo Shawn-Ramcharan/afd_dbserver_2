@@ -312,6 +312,8 @@ class Version(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True
 
     def set_as_official(self, dbsession: DBSession):
         for version in self.resource.get_all_with_tags(dbsession, [Version.OFFICIAL]):
+            if version.tags is None:
+                continue
             if Version.OFFICIAL in version.tags:
                 if version.tags is None:
                     continue
@@ -345,33 +347,31 @@ class Version(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True
 
     def add_item(
         self, dbsession: DBSession,
+        user_id: str,
         name: str,
         location: str,
         attrs: Optional[dict] = None
     ):
-        item = Item(location=location)
-        if attrs:
-            item.attrs=attrs
-        item.created_by = request.authenticated_userid
-        item.modified_by = request.authenticated_userid
-        item_count = request.dbsession.query(Item).filter(Item.location_hash==item.location_hash).count()
-        if item_count == 1:
-            LOG.info("An item already exists with this location. Merging metadata: %s"%location)
-            item = request.dbsession.query(Item).filter(Item.location_hash==item.location_hash).one()
-            item.merge_attrs(attrs)
-            item.modified_by = request.authenticated_userid
-        elif item_count > 1:
-            LOG.critical("Integrity error!  More than one item record with same hash: %s (%s)"%(location, item.location_hash))
-            raise Exception("Integrity error!  More than one item record with same hash: %s (%s)"%(location, item.location_hash))
-        else:
-            request.dbsession.add(item)
-            request.dbsession.flush()
-        # This will raise an IntegrityError constraint exception if name is already used - caught by view
-        uri = "%s?item=%s"%(self.uri,name)
-        item_assoc = ItemAssoc(name=name, version=self, item=item, uri=uri)
-        request.dbsession.add(item_assoc)
-        request.dbsession.flush()
-        return item_assoc
+        pass
+        # item = Item(location=location)
+        # item_count = request.dbsession.query(Item).filter(Item.location_hash==item.location_hash).count()
+        # if item_count == 1:
+        #     LOG.info("An item already exists with this location. Merging metadata: %s"%location)
+        #     item = request.dbsession.query(Item).filter(Item.location_hash==item.location_hash).one()
+        #     item.merge_attrs(attrs)
+        #     item.modified_by = request.authenticated_userid
+        # elif item_count > 1:
+        #     LOG.critical("Integrity error!  More than one item record with same hash: %s (%s)"%(location, item.location_hash))
+        #     raise Exception("Integrity error!  More than one item record with same hash: %s (%s)"%(location, item.location_hash))
+        # else:
+        #     request.dbsession.add(item)
+        #     request.dbsession.flush()
+        # # This will raise an IntegrityError constraint exception if name is already used - caught by view
+        # uri = "%s?item=%s"%(self.uri,name)
+        # item_assoc = ItemAssoc(name=name, version=self, item=item, uri=uri)
+        # request.dbsession.add(item_assoc)
+        # request.dbsession.flush()
+        # return item_assoc
 
     def get_items(self, dbsession: DBSession):
         stmt = select(ItemAssoc, Item).where(
