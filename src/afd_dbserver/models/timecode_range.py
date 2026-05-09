@@ -41,13 +41,13 @@ class TimecodeRange(
     PROJECT_CLS_ATTR: ClassVar = "take_id"
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: DBSession):
+    def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
         if payload.take_id is not None:
             cls.check_capture_status(dbsession, payload.take_id)
         timecode_ = Timecode()
         timecode_.set_from_string(payload.tc_in, payload.tc_rate)
         payload.frame_count = timecode_.frames
-        model = super(TimecodeRange, cls).create(payload, dbsession)
+        model = super(TimecodeRange, cls).create(user_id, payload, dbsession)
         return model
 
     @staticmethod
@@ -65,7 +65,12 @@ class TimecodeRange(
                     f"status associated with this Take: {tc_range}"
                 )
 
-    def copy_tc(self, dbsession: DBSession, take_id: uuid.UUID | None = None):
+    def copy_tc(
+        self,
+        dbsession: DBSession,
+        user_id: str,
+        take_id: Optional[uuid.UUID] = None
+    ):
         tc_range_copy = TimecodeRange(
             tc_in=self.tc_in,
             tc_out=self.tc_out,
@@ -74,8 +79,8 @@ class TimecodeRange(
             description=self.description,
             attrs=self.attrs,
             take_id=take_id,
-            created_by="shawn",
-            modified_by="shawn"
+            created_by=user_id,
+            modified_by=user_id
         )
         dbsession.add(tc_range_copy)
         dbsession.commit()

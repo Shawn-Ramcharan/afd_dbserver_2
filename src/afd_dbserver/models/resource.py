@@ -1,4 +1,5 @@
 import uuid
+import logging
 from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
@@ -15,6 +16,8 @@ from .mixin import (
     utcnow,
 )
 from ..exc import NotFoundError
+
+LOG = logging.getLoger(__name__)
 
 if TYPE_CHECKING:
     from .project import Project
@@ -154,73 +157,88 @@ class Resource(
             stmt = stmt.where(Version.is_committed == True)
         return dbsession.exec(stmt.order_by(Version.number.desc())).all()
 
-    # TODO: Wip on Resource functions
-
-    def create_next_version(self, request, tags=None, description=None, attrs=None):
-        if not tags:
-            tags = []
-        if not attrs:
-            attrs={}
+    def create_next_version(
+        self,
+        dbsession: DBSession,
+        user_id: str,
+        tags: Optional[list[str]] = None,
+        description: Optional[str] = None,
+        attrs: Optional[dict] = None
+    ):
         # create the next logical version and add the items
-        number = self.get_next_version_number(request)
-        LOG.debug("Creating version number %d for resource %s"%(number, self.id))
-        uri = "%s/version/%d"%(self.uri, number)
-        version = Version(resource=self, number=number, tags=tags, description=description, uri=uri, project=self.project, attrs=attrs)
-        version.created_by = request.authenticated_userid
-        version.modified_by = request.authenticated_userid
-        request.dbsession.add(version)
-        request.dbsession.flush()
-        LOG.debug("Created version with id=%s"%version.id)
+        number = self.get_next_version_number(dbsession)
+        LOG.debug(f"Creating version {number=} for resource {self.id}")
+        uri = f"{self.uri}/version/{number}"
+        payload = Version(
+            project_id=self.project_id,
+            resource_id=self.id,
+            number=number,
+            tags=tags,
+            attrs=attrs,
+            description=description,
+            uri=uri,
+            created_by=user_id,
+            modified_by=user_id
+        )
+        version = Version.create(user_id, payload, dbsession)
+        LOG.debug(f"Created version with {version.id=}")
         return version
 
-    def get_next_version_number(self, request):
+    def get_next_version_number(self, dbsession; DBSession):
         """ Returns the next available version number.
         """ 
-        results = request.dbsession.query(Version.number).filter(Version.resource_id==self.id).all()
-        numbers = [r[0] for r in results]
-        LOG.debug(numbers)
-        if not numbers:
+        stmt = select(Version.number).where(Version.resource_id==self.id)
+        results = dbsession.exec(stmt).all()
+        if len(results) == 0:
             return 1
-        else:
-            return sorted(numbers)[-1]+1
+        return max(results)
 
-    def get_by_number(self, request, number):
+    def get_by_number(self, dbsession: DBSession, number: int):
         try:
-            return request.dbsession.query(Version).filter(and_(Version.resource_id==self.id, Version.number==number)).one()
+            stmt = select(Version).where(
+                Version.resource_id == self.id,
+                Version.number == number
+            )
+            return dbsession.exec(stmt).one()
         except NoResultFound as err:
             return None
 
-    def get_all_with_tags(self, request, tags):
-        tag_array = array(tags)
-        return request.dbsession.query(Version).filter(and_(Version.resource_id==self.id, 
-                                                            Version.tags.contains(tag_array),
-                                                            Version.is_committed==True ) 
-                                                        ).all()
+    def get_all_with_tags(self, dbsession: DBSession, tags: list[str]):
+        stmt = select(Version).where(
+            Version.resource_id == self.id,
+            Version.tags.contains(tags),
+            Version.is_committed is True
+        )
+        return dbsession.exec(stmt).all()
 
-    def get_official_version(self, request):
+    def get_official_version(self, dbsession: DBSession):
         try:
-            return request.dbsession.query(Version).filter(and_(Version.resource_id==self.id, 
-                                                                Version.tags.contains(array(["official"])),
-                                                                Version.is_committed==True ) 
-                                                            ).one()
+            stmt = select(Version).where(
+                Version.resource_id == self.id,
+                Version.tags.contains([Version.OFFICIAL,]),
+                Version.is_committed is True
+            )
+            return dbsession.exec(stmt).one()
         except NoResultFound as err:
             return None
 
-    def get_latest_version(self, request):
+    def get_latest_version(self, dbsession: DBSession):
         try:
-            return request.dbsession.query(Version).filter(and_(Version.resource_id==self.id, 
-                                                                    Version.tags.contains(array(["latest"])),
-                                                                    Version.is_committed==True ) 
-                                                            ).one()
+            stmt = select(Version).where(
+                Version.resource_id == self.id,
+                Version.tags.contains([Version.LATEST,]),
+                Version.is_committed is True
+            )
+            return dbsession.exec(stmt).one()
         except NoResultFound as err:
             return None
 
-    def get_official_or_latest_version(self, request):
+    def get_official_or_latest_version(self, dbsession: DBSession):
         LOG.debug("Looking for official version")
-        version = self.get_official_version(request)
+        version = self.get_official_version(dbsession)
         if version is None:
             LOG.debug("Looking for latest version")
-            version = self.get_latest_version(request)
+            version = self.get_latest_version(dbsession)
         return version
 
     # def update(self, request, name=None, group=None, attrs=None):
@@ -270,6 +288,112 @@ class Version(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True
     #     }
     # )
 
+    def commit(self, dbsession: DBSession):
+        if self.is_committed:
+            return
+        # transfer the 'latest' tag to this version
+        for version in self.resource.get_all_with_tags(dbsession, [Version.LATEST,]):
+            if version.id == self.id:
+                continue
+            if version.tags is None:
+                continue
+            if Version.LATEST in version.tags:
+                # remove the 'latest' tag from this version
+                LOG.debug(f"Removing latest tag from version {version.number}")
+                tags = version.tags
+                tags.remove(self.LATEST)
+                version.tags = tags
+        if self.tags is None:
+            self.tags = []
+        self.tags.append(self.LATEST)
+        self.is_committed = True
+        LOG.debug(f"Committing version ({self.id}) and setting latest {self.tags=}")
+        dbsession.commit()
+
+    def set_as_official(self, dbsession: DBSession):
+        for version in self.resource.get_all_with_tags(dbsession, [Version.OFFICIAL]):
+            if Version.OFFICIAL in version.tags:
+                if version.tags is None:
+                    continue
+                # remove the 'official' tag from this version
+                tags = version.tags
+                tags.remove(self.OFFICIAL)
+                version.tags = tags
+        if self.tags is None:
+            self.tags = []
+        self.tags.append(self.OFFICIAL)
+        dbsession.commit()
+
+    # def update(self, request, tags=None, description=None, attrs=None):
+    #     LOG.debug("Update: current tags are %s.\nAdd %s"%(self.tags, tags))
+    #     if tags is not None:
+    #         original_tags = self.tags
+    #         self.tags=tags
+    #         if self.OFFICIAL in original_tags:
+    #             tags = self.tags + [self.OFFICIAL]
+    #             self.tags = tags
+    #         if self.LATEST in original_tags:
+    #             tags = self.tags + [self.LATEST]
+    #             self.tags = tags
+    #         flag_modified(self, "tags")
+    #     LOG.debug("Updated tags are: %s"%self.tags)
+    #     if description is not None:
+    #         LOG.debug("Updating description to: %s"%description)
+    #         self.description = description
+    #     self.merge_attrs(attrs)
+    #     self.update_stamp(request)
+
+    def add_item(
+        self, dbsession: DBSession,
+        name: str,
+        location: str,
+        attrs: Optional[dict] = None
+    ):
+        item = Item(location=location)
+        if attrs:
+            item.attrs=attrs
+        item.created_by = request.authenticated_userid
+        item.modified_by = request.authenticated_userid
+        item_count = request.dbsession.query(Item).filter(Item.location_hash==item.location_hash).count()
+        if item_count == 1:
+            LOG.info("An item already exists with this location. Merging metadata: %s"%location)
+            item = request.dbsession.query(Item).filter(Item.location_hash==item.location_hash).one()
+            item.merge_attrs(attrs)
+            item.modified_by = request.authenticated_userid
+        elif item_count > 1:
+            LOG.critical("Integrity error!  More than one item record with same hash: %s (%s)"%(location, item.location_hash))
+            raise Exception("Integrity error!  More than one item record with same hash: %s (%s)"%(location, item.location_hash))
+        else:
+            request.dbsession.add(item)
+            request.dbsession.flush()
+        # This will raise an IntegrityError constraint exception if name is already used - caught by view
+        uri = "%s?item=%s"%(self.uri,name)
+        item_assoc = ItemAssoc(name=name, version=self, item=item, uri=uri)
+        request.dbsession.add(item_assoc)
+        request.dbsession.flush()
+        return item_assoc
+
+    def get_items(self, dbsession: DBSession):
+        stmt = select(ItemAssoc, Item).where(
+            ItemAssoc.version_id == self.id,
+        )
+        return dbsession.exec(stmt).all()
+
+    def get_items_by_name(self, dbsession: DBSession, names: list[str]):
+        """ Supports querying multiple items in the same query
+        """
+        stmt = select(ItemAssoc).where(
+            ItemAssoc.version_id == self.id,
+            ItemAssoc.name.in_(names)
+        )
+        return dbsession.exec(stmt).all()
+
+    # def delete(self, request):
+    #     # first delete items
+    #     for item_assoc in self.get_items(request):
+    #         item_assoc.delete(request)
+    #     LOG.debug("Deleting %s"%self)
+    #     request.dbsession.delete(self)
 
 class VersionLink(BaseMixin, AttrMixin, ProjectScopedParentMixin, SQLModel, table=True):
     __tablename__ = "version_link_t"

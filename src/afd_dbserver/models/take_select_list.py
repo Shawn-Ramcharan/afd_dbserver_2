@@ -85,7 +85,7 @@ class TakeSelectList(
     PROJECT_CLS_ATTR: ClassVar = "take_select_list_id"
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: DBSession):
+    def create(cls, user_id, payload: SQLModel, dbsession: DBSession):
         if payload.name is None or payload.name == "":
             # get the count of number of lists this project already has
             stmt = select(TakeSelectList).where(
@@ -95,7 +95,7 @@ class TakeSelectList(
             list_count = dbsession.exec(stmt).count()
             new_list_name = "{0} #{1:03d}".format(str(payload.type_).title(), list_count+1)
             payload.name = new_list_name
-        model = super(TakeSelectList, cls).create(payload, dbsession)
+        model = super(TakeSelectList, cls).create(user_id, payload, dbsession)
         return model
 
     @classmethod

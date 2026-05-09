@@ -61,12 +61,12 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
         return f"{source_.virtual_asset.code}_r{source_.number}_to_{target_.virtual_asset.code}_r{target_.number}"
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: DBSession):
+    def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
         # determine the fully-qualified-name (fqn)
         source_ = VirtualAssetRevision.get_by_id(payload.source_id, dbsession)
         target_ = VirtualAssetRevision.get_by_id(payload.target_id, dbsession)
         payload.fqn = cls.get_fqn_string(source_, target_)
-        model = super(Mapping, cls).create(payload, dbsession)
+        model = super(Mapping, cls).create(user_id, payload, dbsession)
         return model
 
     @classmethod

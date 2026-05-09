@@ -42,14 +42,16 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     )
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: DBSession):
+    def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
         cls._check_single_owner(payload)
-        model = super(CaptureLoad, cls).create(payload, dbsession)
+        model = super(CaptureLoad, cls).create(user_id, payload, dbsession)
         return model
 
     @classmethod
     def _check_single_owner(cls, payload: SQLModel):
-        if payload.volume_id is not None and payload.take_id is not None:
+        volume_id = getattr(payload, "volume_id", None)
+        take_id = getattr(payload, "take_id", None)
+        if volume_id is not None and take_id is not None:
             raise BadRequestError("A CaptureLoad can be linked to a Volume OR a Take.")
 
     @classmethod
@@ -124,6 +126,7 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     def copy_cpl(
         self,
         dbsession: DBSession,
+        user_id: str,
         target_owner: Any,
         enabled_entries_only: bool = False
     ):
@@ -153,12 +156,12 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
             created_by="shawn",
             modified_by="shawn"
         )
-        new_capture_load = self.__class__.create(payload, dbsession)
+        new_capture_load = self.__class__.create(user_id, payload, dbsession)
         # copy the entries
         for entry in self.entries:
             if enabled_entries_only is True and entry.is_enabled is False:
                 continue
-            entry.copy_cple(dbsession, new_capture_load)
+            entry.copy_cple(user_id, dbsession, new_capture_load)
         dbsession.commit()
         return new_capture_load
 
@@ -204,13 +207,13 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
         return index
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: DBSession):
+    def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
         index = cls.get_next_index(payload.capture_load_id, dbsession)
         payload.index = index
-        model = super(CaptureLoadEntry, cls).create(payload, dbsession)
+        model = super(CaptureLoadEntry, cls).create(user_id, payload, dbsession)
         return model
 
-    def copy_cple(self, dbsession: DBSession, capture_load: CaptureLoad):
+    def copy_cple(self, dbsession: DBSession, user_id: str, capture_load: CaptureLoad):
         attrs = {}
         if self.attrs is not None:
             attrs = self.attrs.copy()
@@ -227,10 +230,10 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
             has_facial=self.has_facial,
             attrs=attrs
         )
-        copied_entry = self.__class__.create(payload, dbsession)
+        copied_entry = self.__class__.create(user_id, payload, dbsession)
         # copy the associated versions
         for version in self.versions:
-            version.copy_cplev(dbsession, copied_entry)
+            version.copy_cplev(dbsession, user_id, copied_entry)
         return copied_entry
 
     # def update_(self, request, params):
@@ -282,6 +285,7 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
     def add_or_update_version(
         self,
         dbsession: DBSession,
+        user_id: str,
         name: str,
         version: Any, # Should be Version
         attrs: dict
@@ -296,9 +300,9 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
         try:
             cle_version = self.get_version_by_name(dbsession, name)
             LOG.debug("Updating {0} record with id={1}".format(cle_version.__class__.__name__, cle_version.id))
-            self.__class__.update(cle_version.id, paylaod, dbsession)
+            self.__class__.update(use_id, cle_version.id, paylaod, dbsession)
         except NotFoundError:
-            cle_version = self.__class__.create(paylaod, dbsession)
+            cle_version = self.__class__.create(user_id, paylaod, dbsession)
             LOG.debug("Created new {0} record with id={1}".format(cle_version.__class__.__name__, cle_version.id))
         return cle_version
 
@@ -353,7 +357,7 @@ class CaptureLoadEntryVersion(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLM
     version_id: uuid.UUID = Field(foreign_key="version_t.id", nullable=False)
     version: Version = Relationship()
 
-    def copy_cplv(self, dbsession: DBSession, capture_load_entry: CaptureLoadEntry):
+    def copy_cplv(self, dbsession: DBSession, user_id: str, capture_load_entry: CaptureLoadEntry):
         payload = SQLModel(
             project_id=capture_load_entry.project.id,
             capture_load_entry_id=capture_load_entry.id,
@@ -361,7 +365,7 @@ class CaptureLoadEntryVersion(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLM
             version_id=self.version.id,
             attrs=self.attrs
         )
-        copied_cplev = self.__class__.create(payload, dbsession)
+        copied_cplev = self.__class__.create(user_id, payload, dbsession)
         dbsession.add(copied_cplev)
         dbsession.commit()
         return copied_cplev

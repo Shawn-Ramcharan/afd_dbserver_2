@@ -15,7 +15,6 @@ class IdMixin(SQLModel):
     """ID"""
 
     id: Optional[uuid.UUID] = Field(
-        # sa_type=UUID(as_uuid=True),
         primary_key=True,
         unique=True,
         nullable=False,
@@ -35,57 +34,48 @@ class BaseMixin(IdMixin):
 
     created_by: str = Field(nullable=False)
     creation_date: Optional[datetime] = Field(
-        # sa_type=DateTime(timezone=True),
         default_factory=utcnow,
         nullable=False,
-        # sa_column_kwargs={
-        #     "server_default": utcnow
-        # }
     )
     modified_by: str = Field(nullable=False)
     last_modified: Optional[datetime] = Field(
-        # sa_type=DateTime(timezone=True),
         default_factory=utcnow,
         nullable=False,
-        # sa_column_kwargs={
-        #     # "server_default": utcnow,
-        #     "onupdate": utcnow
-        # },
     )
 
     @classmethod
-    def create(cls, payload: SQLModel, dbsession: DBSession):
+    def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
         model = cls.model_validate(payload)
-        model.set_creation_stamp(dbsession)
+        model.set_creation_stamp(user_id)
         dbsession.add(model)
         dbsession.commit()
         dbsession.refresh(model)
         return model
 
     @classmethod
-    def update(cls, id_: uuid.UUID, payload: SQLModel, dbsession: DBSession):
+    def update(cls, user_id: str, id_: uuid.UUID, payload: SQLModel, dbsession: DBSession):
         model = cls.get_by_id(id_, dbsession)
         model_data = cls.model_validate(payload)
         if not model:
             return None
         for field, value in model_data.model_dump().items():
             setattr(model, field, value)
-        model.update_stamp(dbsession)
+        model.update_stamp(user_id)
         dbsession.commit()
         dbsession.refresh(model)
         return model
 
-    def set_creation_stamp(self, dbsession: DBSession):
+    def set_creation_stamp(self, user_id):
         # track the creating user
-        # self.created_by = request.authenticated_userid
-        # self.modified_by = request.authenticated_userid
-        self.created_by = "shawn"
-        self.modified_by = "shawn"
+        self.created_by = user_id
+        self.creation_date = utcnow()
+        self.modified_by = user_id
+        self.last_modified = utcnow()
 
-    def update_stamp(self, dbsession: DBSession):
+    def update_stamp(self, user_id):
         # track the modifying user
-        # self.modified_by = request.authenticated_userid
-        self.modified_by = "shawn"
+        self.modified_by = user_id
+        self.last_modified = utcnow()
 
 
 class AttrMixin(SQLModel):
@@ -101,7 +91,6 @@ class AttrMixin(SQLModel):
                 self.attrs.pop(key)
             else:
                 self.attrs.update({key: value})
-
 
 class ProjectScopedDataMixin(object):
 

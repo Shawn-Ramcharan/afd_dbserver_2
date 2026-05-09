@@ -64,8 +64,8 @@ class Note(
     )
     PROJECT_ASSOC_CLS: ClassVar = NoteAssoc
 
-    def create(cls, payload: SQLModel, dbsession: DBSession):
-        note_ = super(Note, cls).create(payload, dbsession)
+    def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
+        note_ = super(Note, cls).create(user_id, payload, dbsession)
         take_id = getattr(payload, "take_id", None)
         session_id = getattr(payload, "session_id", None)
         take_select_id = getattr(payload, "take_select_id", None)
