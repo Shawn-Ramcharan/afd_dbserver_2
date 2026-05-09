@@ -9,9 +9,7 @@ from .resource_mixin import ResourceMixin
 from .project import Project
 from .resource import Resource, ResourceAssoc
 from ..exc import NotFoundError
-
-if TYPE_CHECKING:
-    from .virtual_asset import VirtualAssetRevision
+from .virtual_asset import VirtualAssetRevision
 
 class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
     """Describes a relationship between a source skeleton and a target
@@ -70,7 +68,7 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
         return model
 
     @classmethod
-    def get_all(cls, dbsession: DbSession, project_id: uuid.UUID):
+    def get_all(cls, dbsession: DBSession, project_id: uuid.UUID):
         return cls.get_all_by_project(dbsession, project_id)
         # return request.dbsession.query(cls).join(Project).filter(Project.id==project_id).order_by(desc(cls.creation_date)).all()
 

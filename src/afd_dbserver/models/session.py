@@ -12,9 +12,9 @@ from .location import Location
 from .note import Note, NoteAssoc
 from .resource import Resource, ResourceAssoc
 from ..exc import BadRequestError
+from .take import Take, ETakeType
 if TYPE_CHECKING:
     from .volume import Volume
-    from .take import Take, ETakeType
 
 class Session(
     BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True

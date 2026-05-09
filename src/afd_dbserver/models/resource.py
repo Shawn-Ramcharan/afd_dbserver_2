@@ -17,7 +17,7 @@ from .mixin import (
 )
 from ..exc import NotFoundError
 
-LOG = logging.getLoger(__name__)
+LOG = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .project import Project
@@ -184,7 +184,7 @@ class Resource(
         LOG.debug(f"Created version with {version.id=}")
         return version
 
-    def get_next_version_number(self, dbsession; DBSession):
+    def get_next_version_number(self, dbsession: DBSession):
         """ Returns the next available version number.
         """ 
         stmt = select(Version.number).where(Version.resource_id==self.id)
