@@ -23,12 +23,12 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
     """
     __tablename__ = "project_t"
     code: str = Field(max_length=32, unique=True, nullable=False)
-    name: str = Field(max_length=128)
-    client_code: str = Field(max_length=32)
-    client_name: str = Field(max_length=128)
+    name: Optional[str] = Field(max_length=128, default=None)
+    client_code: str = Field(max_length=32, default=None)
+    client_name: Optional[str] = Field(max_length=128, default=None)
     description: Optional[str] = Field(default=None)
-    root_folder: Optional[str] = Field(max_length=512)
-    is_active: bool = Field(default=True)
+    root_folder: Optional[str] = Field(max_length=512, default=None)
+    is_active: Optional[bool] = Field(default=True)
     virtual_assets: "VirtualAsset" = Relationship()# order_by="VirtualAsset.code.asc()")
     sessions: list["Session"] = Relationship()
     takes: list["Take"] = Relationship()# order_by="Take.creation_date.desc()")
