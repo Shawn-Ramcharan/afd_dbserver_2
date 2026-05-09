@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Enum as SqlaEnum
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import ARRAY, Text
+from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session as DBSession
-from sqlmodel import (SQLModel, Field, Relationship, Field, Column, select, not_)
+from sqlmodel import (SQLModel, Field, Relationship, Field, Column, select, not_, distinct)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
@@ -121,29 +122,52 @@ class Take(
         name: str
     ):
         try:
-            return request.dbsession.query(cls).filter(and_(cls.project_id==project_id, cls.name==name)).one()
+            stmt = select(cls).where(
+                cls.project_id == project_id,
+                cls.name == name
+            )
+            return dbsession.exec(stmt).one()
         except NoResultFound:
-            raise HTTPNotFound("No Take found with project_id={0} and name={1}".format(project_id, name))
+            raise NotFoundError(cls, project_id=project_id, name=name)
 
     @classmethod
-    def get_by_slates(cls, request, project_id, slates):
-        return request.dbsession.query(cls).filter(and_(cls.project_id==project_id,cls.slate.in_(slates))).order_by(desc(cls.name)).all()
+    def get_by_slates(
+        cls,
+        dbsession: DBSession,
+        project_id: uuid.UUID,
+        slates: list[str]
+    ):
+        stmt = select(cls).where(
+            cls.project_id == project_id,
+            cls.slate.in_(slates)
+        )
+        return dbsession.exec(stmt.order_by(cls.name.desc())).all()
 
     @classmethod
-    def get_all_slates(cls, request, project_id):
-        take_types = request.params.getall("types")
-        query = request.dbsession.query(distinct(cls.slate)).filter(cls.project_id==project_id)
+    def get_all_slates(
+        cls,
+        dbsession: DBSession,
+        project_id: uuid.UUID,
+        take_types: Optional[ETakeType] = None
+    ):
+        stmt = select(distinct(cls.slate)).where(cls.project_id == project_id)
         if take_types is not None:
-            query = query.filter(cls.type_.in_(take_types))
-        return [s[0] for s in query.all()]
+            stmt = stmt.where(cls.type_.in_(take_types))
+        return dbsession.exec(stmt).all()
 
     @classmethod
-    def get_next_take_from_slate(cls, request, project_id, slate):
-        query = request.dbsession.query(cls.number).filter(and_(cls.project_id==project_id, cls.slate==slate))
-        results = query.all()
+    def get_next_take_from_slate(
+        cls,
+        dbsession: DBSession,
+        project_id: uuid.UUID,
+        slate: str
+    ):
+        stmt = select(cls.number).where(
+            cls.project_id == project_id,
+            cls.slate == slate
+        )
+        results = dbsession.exec(stmt).all()
         if len(results) == 0:
             return 1
-        highest_value = sorted([v[0] for v in query.all()])[-1]
+        highest_value = max(results)
         return highest_value+1
-
-
