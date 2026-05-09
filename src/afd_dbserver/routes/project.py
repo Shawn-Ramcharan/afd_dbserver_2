@@ -28,7 +28,7 @@ def get_all_project(
 
 @router.post("", response_model=Project)
 def create_project(project: Project, dbsession: Session = Depends(get_session)):
-    return Project.create(project, dbsession)
+    return Project.create("shawn", project, dbsession)
 
 @router.get("/{id}", response_model=Project)
 def get_project_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
@@ -42,7 +42,7 @@ def get_project_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
 
 @router.put("/{id}", response_model=Project)
 def update_project(id: uuid.UUID, project_data: Project, dbsession: Session = Depends(get_session)):
-    project = Project.update(id, project_data, dbsession)
+    project = Project.update("shawn", id, project_data, dbsession)
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

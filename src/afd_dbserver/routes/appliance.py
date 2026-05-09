@@ -30,7 +30,7 @@ def get_all_appliance(
 
 @router.post("", response_model=Appliance)
 def create_appliance(appliance: Appliance, dbsession: Session = Depends(get_session)):
-    return Appliance.create(appliance, dbsession)
+    return Appliance.create("shawn", appliance, dbsession)
 
 @router.get("/{id}", response_model=Appliance)
 def get_appliance_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
@@ -44,7 +44,7 @@ def get_appliance_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)
 
 @router.put("/{id}", response_model=Appliance)
 def update_appliance(id: uuid.UUID, appliance_data: Appliance, dbsession: Session = Depends(get_session)):
-    appliance = Appliance.update(id, appliance_data, dbsession)
+    appliance = Appliance.update("shawn", id, appliance_data, dbsession)
     if appliance is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
