@@ -78,5 +78,5 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
         try:
             return dbsession.exec(select(cls).where(cls.code == code)).one()
         except NoResultFound:
-            raise NotFoundError(f"{cls.__name__} with code {code} not found.")
+            raise NotFoundError(cls, code=code)
 

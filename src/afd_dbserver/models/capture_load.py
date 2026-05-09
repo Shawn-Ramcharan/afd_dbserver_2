@@ -311,14 +311,14 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
             cle_version = dbsession.scalar(stmt).one()
             return cle_version
         except NoResultFound:
-            raise NotFoundError(f"No CPLE Version with name={name} found for CPLE <{self.id}>.")
+            raise NotFoundError(CaptureLoadEntryVersion, name=name, id=self.id)
 
     def remove_version(self, dbsession: DBSession, cle_version_id: uuid.UUID):
         LOG.debug('"{0}"'.format(cle_version_id))
         cle_version = CaptureLoadEntryVersion.get_by_id(cle_version_id, dbsession)
         LOG.debug(cle_version)
         if not cle_version:
-            raise NotFoundError("No CaptureLoadEntryVersion with id={0} was found.".format(cle_version_id))
+            raise NotFoundError(CaptureLoadEntryVersion, id=self.id)
         LOG.debug("Removing {0} from {1}".format(cle_version, self))
         dbsession.delete(cle_version)
         dbsession.commit()

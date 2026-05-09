@@ -28,7 +28,7 @@ class IdMixin(SQLModel):
         try:
             return dbsession.exec(select(cls).where(cls.id == id_)).one()
         except NoResultFound:
-            raise NotFoundError(f"{cls.__name__} with {id_=} not found.")
+            raise NotFoundError(cls, id_=id_)
 
 class BaseMixin(IdMixin):
     """BaseMixin"""

@@ -55,9 +55,7 @@ class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table
         try:
             return dbsession.exec(stmt).one()
         except NoResultFound:
-            raise NotFoundError(
-                f"No revision with number={number} found for VirtualAsset id={self.id}")
-
+            raise NotFoundError(VirtualAssetRevision, id=self.id, number=number)
     def get_next_logical_number(self, dbsession: DBSession):
         """ Returns the next available version number.
         """

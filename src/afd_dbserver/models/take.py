@@ -5,13 +5,13 @@ from sqlalchemy import Enum as SqlaEnum
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import ARRAY, Text
 from sqlmodel import Session as DBSession
-from sqlmodel import (SQLModel, Field, Relationship, Field, Column)
+from sqlmodel import (SQLModel, Field, Relationship, Field, Column, select, not_)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .resource import Resource, ResourceAssoc
 from .note import Note, NoteAssoc
-from ..exc import NotFoundError
+from ..exc import NotFoundError, BadRequestError
 
 if TYPE_CHECKING:
     from .take_select import TakeSelect
@@ -93,28 +93,33 @@ class Take(
         back_populates="take"
     )
 
-    # TODO: work on Take functions
+    @classmethod
+    def get_all(
+        cls,
+        dbsession: DBSession,
+        project_id: uuid.UUID,
+        type_: Optional[ETakeType] = None,
+        omit_status: Optional[list[ETakeStatus]] = None
+    ):
+        stmt = select(cls).where(cls.project_id==project_id)
+        if omit_status:
+            if omit_status not in ETakeStatus.__members__:
+                raise BadRequestError(f"Invalid status(s) {omit_status=}")
+            stmt = stmt.where(not_(cls.status.in_(omit_status)))
+        if type_:
+            if type_ not in ETakeType.__members__:
+                raise BadRequestError(f"Invalid type_ {type_=}")
+            stmt = stmt.where(cls.type==type_)
+        stmt.order_by(cls.creation_date.desc())
+        return dbsession.exec(stmt).all()
 
     @classmethod
-    def get_all(cls, , project_id):
-        from afd_dbserver.models.validators import TakeStatusValidator, TakeTypeValidator
-        query = request.dbsession.query(cls).join(Project).filter(Project.id==project_id)
-        if "omit_status" in request.params:
-            omit_status_filters = request.params.getall("omit_status")
-            for status in omit_status_filters:
-                validator = TakeStatusValidator()
-                status = validator.to_python(status)
-                query = query.filter(cls.status!=status)
-        if "type" in request.params:
-            type_param = request.params.get("type")
-            validator = TakeTypeValidator()
-            type_ = validator.to_python(type_param)
-            LOG.debug("Filtering by take type: %s"%type_)
-            query = query.filter(cls.type_==type_)
-        return query.order_by(cls.creation_date.desc()).all()
-
-    @classmethod
-    def get_by_name(cls, request, project_id, name):
+    def get_by_name(
+        cls,
+        dbsession: DBSession,
+        project_id: uuid.UUID,
+        name: str
+    ):
         try:
             return request.dbsession.query(cls).filter(and_(cls.project_id==project_id, cls.name==name)).one()
         except NoResultFound:

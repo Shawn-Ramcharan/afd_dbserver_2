@@ -57,7 +57,7 @@ class TimecodeRange(
         from .take import Take
         take = Take.get_by_id(take_id, dbsession)
         if not take:
-            raise NotFoundError(f"No Take with id={take_id} was found.")
+            raise NotFoundError(Take, take_id=take_id)
         for tc_range in take.timecode_ranges:
             if tc_range.type_ == ETimecodeRangeType.capture:
                 raise BadRequestError(

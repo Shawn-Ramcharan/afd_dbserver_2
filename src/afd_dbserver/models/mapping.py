@@ -63,11 +63,8 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
     @classmethod
     def create(cls, payload: SQLModel, dbsession: DBSession):
         # determine the fully-qualified-name (fqn)
-        try:
-            source_ = VirtualAssetRevision.get_by_id(payload.source_id, dbsession)
-            target_ = VirtualAssetRevision.get_by_id(payload.target_id, dbsession)
-        except NoResultFound as err:
-            raise NotFoundError(err)
+        source_ = VirtualAssetRevision.get_by_id(payload.source_id, dbsession)
+        target_ = VirtualAssetRevision.get_by_id(payload.target_id, dbsession)
         payload.fqn = cls.get_fqn_string(source_, target_)
         model = super(Mapping, cls).create(payload, dbsession)
         return model
@@ -93,10 +90,12 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
         try:
             return dbsession.exec(stmt).one()
         except NoResultFound:
-            raise NotFoundError(f"No Mapping matching parameters "
-                f"source_id={source_id}, "
-                f"target_id={target_id}, "
-                f"name={name} found.")
+            raise NotFoundError(
+                cls,
+                source_id=source_id,
+                target_id=target_id,
+                name=name
+            )
 
     def update(cls, id_: uuid.UUID, payload: SQLModel, dbsession: DBSession):
         source_id = getattr(payload, "source_id", None)

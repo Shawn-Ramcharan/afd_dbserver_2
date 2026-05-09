@@ -80,5 +80,8 @@ class SolverSetup(
             return dbsession.exec(stmt).one()
         except NoResultFound:
             raise NotFoundError(
-                f"No {cls.__name__} found with {physical_asset_id=}, {virtual_asset_revision_id=}, {name=}"
+                cls,
+                physical_asset_id=physical_asset_id,
+                virtual_asset_revision_id=virtual_asset_revision_id,
+                name=name
             )
