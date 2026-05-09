@@ -1,12 +1,10 @@
-# from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.schema import UniqueConstraint, ForeignKeyConstraint, PrimaryKeyConstraint
+from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import ARRAY, Text, String
-from datetime import datetime, date
-from sqlmodel import Column, Session as DbSession
-from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
+from sqlmodel import Session as DBSession
+from sqlmodel import (SQLModel, Column, Field, Relationship, distinct, select)
 from .mixin import (
     IdMixin,
     BaseMixin,
@@ -16,6 +14,7 @@ from .mixin import (
     ProjectScopedParentMixin,
     utcnow,
 )
+from ..exc import NotFoundError
 
 if TYPE_CHECKING:
     from .project import Project
@@ -62,7 +61,6 @@ class ResourceAssoc(IdMixin, SQLModel, table=True):
     take: "Take" = Relationship()
     take_select_id: Optional[uuid.UUID] = Field(foreign_key="take_select_t.id", default=None)
     take_select: "TakeSelect" = Relationship()
-
 
 class Resource(
     BaseMixin,
@@ -119,6 +117,126 @@ class Resource(
 
     PROJECT_ASSOC_CLS: ClassVar = ResourceAssoc
 
+    @classmethod
+    def get_group_names(cls, dbsession: DBSession):
+        data_ = dbsession.exec(select(distinct(cls.group))).all()
+        return [r[0] for r in data_ if r is not None]
+
+    def get_owner(self, dbsession: DBSession):
+        """ Finds the owning class of this resource.  This is a bit convoluted because many 
+        classes can have resources.
+        """
+        ID_TO_CLASS = {
+            "project_id": Project,
+            "volume_id": Volume,
+            "session_id": Session,
+            "take_id": Take,
+            "mapping_id": Mapping,
+            "solver_setup_id": SolverSetup,
+            "take_select_id": TakeSelect,
+            "device_id": Device,
+            "virtual_asset_revision_id": VirtualAssetRevision,
+        }
+        try:
+            stmt = select(ResourceAssoc).where(ResourceAssoc.resource_id == self.id)
+            rsc_assoc_entry = dbsession.exec(stmt).one()
+        except NoResultFound:
+            raise NoResultFound(cls, id=self.id)
+        for owner_id_attr, class_ in ID_TO_CLASS.items():
+            owner_id = getattr(rsc_assoc_entry, owner_id_attr, None)
+            if owner_id is not None:
+                return class_.get_by_id(owner_id, dbsession)
+        return None
+
+    def get_versions(self, dbsession: DBSession, committed: bool = True):
+        stmt = select(Version).where(Version.resource_id == self.id)
+        if committed is True:
+            stmt = stmt.where(Version.is_committed == True)
+        return dbsession.exec(stmt.order_by(Version.number.desc())).all()
+
+    # TODO: Wip on Resource functions
+
+    def create_next_version(self, request, tags=None, description=None, attrs=None):
+        if not tags:
+            tags = []
+        if not attrs:
+            attrs={}
+        # create the next logical version and add the items
+        number = self.get_next_version_number(request)
+        LOG.debug("Creating version number %d for resource %s"%(number, self.id))
+        uri = "%s/version/%d"%(self.uri, number)
+        version = Version(resource=self, number=number, tags=tags, description=description, uri=uri, project=self.project, attrs=attrs)
+        version.created_by = request.authenticated_userid
+        version.modified_by = request.authenticated_userid
+        request.dbsession.add(version)
+        request.dbsession.flush()
+        LOG.debug("Created version with id=%s"%version.id)
+        return version
+
+    def get_next_version_number(self, request):
+        """ Returns the next available version number.
+        """ 
+        results = request.dbsession.query(Version.number).filter(Version.resource_id==self.id).all()
+        numbers = [r[0] for r in results]
+        LOG.debug(numbers)
+        if not numbers:
+            return 1
+        else:
+            return sorted(numbers)[-1]+1
+
+    def get_by_number(self, request, number):
+        try:
+            return request.dbsession.query(Version).filter(and_(Version.resource_id==self.id, Version.number==number)).one()
+        except NoResultFound as err:
+            return None
+
+    def get_all_with_tags(self, request, tags):
+        tag_array = array(tags)
+        return request.dbsession.query(Version).filter(and_(Version.resource_id==self.id, 
+                                                            Version.tags.contains(tag_array),
+                                                            Version.is_committed==True ) 
+                                                        ).all()
+
+    def get_official_version(self, request):
+        try:
+            return request.dbsession.query(Version).filter(and_(Version.resource_id==self.id, 
+                                                                Version.tags.contains(array(["official"])),
+                                                                Version.is_committed==True ) 
+                                                            ).one()
+        except NoResultFound as err:
+            return None
+
+    def get_latest_version(self, request):
+        try:
+            return request.dbsession.query(Version).filter(and_(Version.resource_id==self.id, 
+                                                                    Version.tags.contains(array(["latest"])),
+                                                                    Version.is_committed==True ) 
+                                                            ).one()
+        except NoResultFound as err:
+            return None
+
+    def get_official_or_latest_version(self, request):
+        LOG.debug("Looking for official version")
+        version = self.get_official_version(request)
+        if version is None:
+            LOG.debug("Looking for latest version")
+            version = self.get_latest_version(request)
+        return version
+
+    # def update(self, request, name=None, group=None, attrs=None):
+    #     if name:
+    #         self.name = name
+    #     if group:
+    #         self.group = group
+    #     self.merge_attrs(attrs)
+    #     self.update_stamp(request)
+    #
+    # def delete(self, request):
+    #     # first delete versions
+    #     for version in self.versions:
+    #         version.delete(request)
+    #     LOG.debug("Deleting %s"%self)
+    #     request.dbsession.delete(self)
 
 class Version(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
 
