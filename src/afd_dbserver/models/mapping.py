@@ -97,11 +97,17 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
                 name=name
             )
 
-    def update(cls, id_: uuid.UUID, payload: SQLModel, dbsession: DBSession):
+    def update(
+        cls,
+        user_id: str,
+        id_: uuid.UUID,
+        payload: SQLModel,
+        dbsession: DBSession
+    ):
         source_id = getattr(payload, "source_id", None)
         target_id = getattr(payload, "target_id", None)
-        cur_mapping = cls.get_by_id(id_, dbsession)
         if source_id or target_id:
+            cur_mapping = cls.get_by_id(id_, dbsession)
             if source_id:
                 source_ = VirtualAssetRevision.get_by_id(source_id, dbsession)
             else:
@@ -112,4 +118,4 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
                 target_ = cur_mapping.target
             fqn_ = cls.get_fqn_string(source_, target_)
             setattr(payload, "fqn", fqn_)
-        return super(Mapping, cls).update(id_, payload, dbsession)
+        return super(Mapping, cls).update(user_id, id_, payload, dbsession)

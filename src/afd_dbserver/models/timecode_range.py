@@ -87,9 +87,19 @@ class TimecodeRange(
         return tc_range_copy
 
     @classmethod
-    def update(cls, id: uuid.UUID, payload: SQLModel, dbsession: DBSession):
+    def update(
+        cls,
+        user_id: str,
+        id: uuid.UUID,
+        payload: SQLModel,
+        dbsession: DBSession
+    ):
         tc_range = TimecodeRange.get_by_id(id, dbsession)
         tc_range.check_capture_status(dbsession, payload.take_id)
-        tc_range.merge_attrs(payload.attrs)
-        model = BaseMixin.update(id, tc_range, dbsession)
+        model = super(TimecodeRange, cls).update(
+            user_id,
+            id,
+            tc_range,
+            dbsession
+        )
         return model

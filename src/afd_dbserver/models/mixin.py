@@ -58,6 +58,9 @@ class BaseMixin(IdMixin):
         model_data = cls.model_validate(payload)
         if not model:
             return None
+        attrs = getattr(payload, "attrs", None)
+        if issubclass(cls, AttrMixin) and attrs is not None:
+            model.merge_attrs(attrs)
         for field, value in model_data.model_dump().items():
             setattr(model, field, value)
         model.update_stamp(user_id)

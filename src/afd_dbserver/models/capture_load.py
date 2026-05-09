@@ -99,6 +99,7 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     @classmethod
     def update(
         cls,
+        user_id: str,
         id_: uuid.UUID,
         payload: SQLModel,
         dbsession: DBSession,
@@ -118,7 +119,7 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
                 cpl_.update_tags(payload.tags)
             else:
                 setattr(cpl_, field, value)
-        cpl_.update_stamp(dbsession)
+        cpl_.update_stamp(user_id)
         dbsession.commit()
         dbsession.refresh(cpl_)
         return cpl_
@@ -300,7 +301,7 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
         try:
             cle_version = self.get_version_by_name(dbsession, name)
             LOG.debug("Updating {0} record with id={1}".format(cle_version.__class__.__name__, cle_version.id))
-            self.__class__.update(use_id, cle_version.id, paylaod, dbsession)
+            self.__class__.update(user_id, cle_version.id, paylaod, dbsession)
         except NotFoundError:
             cle_version = self.__class__.create(user_id, paylaod, dbsession)
             LOG.debug("Created new {0} record with id={1}".format(cle_version.__class__.__name__, cle_version.id))
