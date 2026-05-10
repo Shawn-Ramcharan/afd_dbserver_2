@@ -2,6 +2,8 @@
 x = finished working on (the task will also be removed)
 _ = has not started yet
 
+
+[_] !!!NEED TO FIX ATTR UPDATE LOGIC!!!
 [x] wip on afd_dbserver.models.capture_load.CaptureLoad functions
 [x] wip on afd_dbserver.models.mapping.Mapping functions
 [x] wip on afd_dbserver.models.take.Take functions
