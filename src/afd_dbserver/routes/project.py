@@ -9,8 +9,10 @@ from fastapi import (
 from sqlmodel import (
     Session,
 )
+
 from ..models import get_session
 from ..models.project import Project
+from ..exc import BadRequestError, NotFoundError
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -28,37 +30,44 @@ def get_all_project(
 
 @router.post("", response_model=Project)
 def create_project(project: Project, dbsession: Session = Depends(get_session)):
-    return Project.create("shawn", project, dbsession)
+    user_id = "unknown"
+    try:
+        return Project.create(user_id, project, dbsession)
+    except BadRequestError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(err)
+        )
 
 @router.get("/{id}", response_model=Project)
 def get_project_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
-    project = Project.get_by_id(id, dbsession)
-    if not project:
+    try:
+        return Project.get_by_id(id, dbsession)
+    except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project id {id} Not Found"
+            detail=str(err)
         )
-    return project
 
 @router.put("/{id}", response_model=Project)
 def update_project(id: uuid.UUID, project_data: Project, dbsession: Session = Depends(get_session)):
-    project = Project.update("shawn", id, project_data, dbsession)
-    if project is None:
+    try:
+        return Project.update("shawn", id, project_data, dbsession)
+    except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project id {id} Not Found"
+            detail=str(err)
         )
-    return project
 
 @router.get("/", response_model=Project)
 def get_by_code(code: str, dbsession: Session = Depends(get_session)):
-    project = Project.get_by_code(dbsession, code)
-    if project is None:
+    try:
+        return Project.get_by_code(dbsession, code)
+    except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project code {code} Not Found"
+            detail=str(err)
         )
-    return project
 
 # FIXME: original route should be
 # /projects/{clients}. for now not

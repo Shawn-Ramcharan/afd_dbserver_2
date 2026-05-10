@@ -1,10 +1,10 @@
 from typing import Any, Optional
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, IntegrityError
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, JSON, select, delete, desc)
-from ..exc import NotFoundError
+from ..exc import NotFoundError, BadRequestError
 
 def utcnow():
     """Returns the current time in UTC."""
@@ -23,7 +23,6 @@ class IdMixin(SQLModel):
 
     @classmethod
     def get_by_id(cls, id_: uuid.UUID, dbsession: DBSession):
-        # return dbsessionn.get(cls, id)
         try:
             return dbsession.exec(select(cls).where(cls.id == id_)).one()
         except NoResultFound:
@@ -45,9 +44,12 @@ class BaseMixin(IdMixin):
 
     @classmethod
     def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
+        payload.set_creation_stamp(user_id)
         model = cls.model_validate(payload)
-        model.set_creation_stamp(user_id)
-        dbsession.add(model)
+        try:
+            dbsession.add(model)
+        except IntegrityError as err:
+            raise BadRequestError(err)
         dbsession.commit()
         dbsession.refresh(model)
         return model
@@ -55,27 +57,27 @@ class BaseMixin(IdMixin):
     @classmethod
     def update(cls, user_id: str, id_: uuid.UUID, payload: SQLModel, dbsession: DBSession):
         model = cls.get_by_id(id_, dbsession)
-        model_data = cls.model_validate(payload)
-        if not model:
-            return None
+        model.update_stamp(user_id)
         attrs = getattr(payload, "attrs", None)
         if issubclass(cls, AttrMixin) and attrs is not None:
             model.merge_attrs(attrs)
-        for field, value in model_data.model_dump().items():
+        for field, value in payload.model_dump().items():
+            if field == "id":
+                continue
             setattr(model, field, value)
-        model.update_stamp(user_id)
+        # model = cls.model_validate(model)
         dbsession.commit()
         dbsession.refresh(model)
         return model
 
-    def set_creation_stamp(self, user_id):
+    def set_creation_stamp(self, user_id: str):
         # track the creating user
         self.created_by = user_id
         self.creation_date = utcnow()
         self.modified_by = user_id
         self.last_modified = utcnow()
 
-    def update_stamp(self, user_id):
+    def update_stamp(self, user_id: str):
         # track the modifying user
         self.modified_by = user_id
         self.last_modified = utcnow()
@@ -84,16 +86,15 @@ class BaseMixin(IdMixin):
 class AttrMixin(SQLModel):
     """Extra Attributes to add in database."""
 
-    attrs: Optional[dict] = Field(default=None, sa_type=JSON)
+    attrs: Optional[dict] = Field(sa_type=JSON)
 
     def merge_attrs(self, attrs: dict[str, Any]):
         if self.attrs is None:
-            self.attrs = {}
-        for key, value in attrs.items():
-            if value is None and key in self.attrs:
+            self.attrs = {"test" : "test"}
+        self.attrs.update(attrs)
+        for key, value in self.attrs.items():
+            if value is None:
                 self.attrs.pop(key)
-            else:
-                self.attrs.update({key: value})
 
 class ProjectScopedDataMixin(object):
 
