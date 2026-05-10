@@ -14,6 +14,7 @@ from ..exc import NotFoundError
 if TYPE_CHECKING:
     from .take import Take
     from .take_select import TakeSelect
+    from .take_select_list import TakeSelectList
     from .virtual_asset import VirtualAsset
     from .session import Session
 from .resource import Resource, ResourceAssoc
@@ -29,11 +30,27 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
     description: Optional[str] = Field()
     root_folder: Optional[str] = Field(max_length=512)
     is_active: Optional[bool] = Field(default=True)
-    virtual_assets: "VirtualAsset" = Relationship()# order_by="VirtualAsset.code.asc()")
-    sessions: list["Session"] = Relationship()
-    takes: list["Take"] = Relationship()# order_by="Take.creation_date.desc()")
-    take_selects: list["TakeSelect"] = Relationship()#"TakeSelect")
-    take_select_lists: list["TakeSelectList"] = Relationship()# order_by="TakeSelectList.last_modified.desc()")
+    virtual_assets: list["VirtualAsset"] = Relationship(
+        sa_relationship_kwargs={
+            "order_by": "VirtualAsset.code.asc()"
+        }
+    )
+    sessions: list["Session"] = Relationship(
+        sa_relationship_kwargs={
+            "order_by": "Session.name.asc()"
+        }
+    )
+    takes: list["Take"] = Relationship(
+        sa_relationship_kwargs={
+            "order_by": "Take.creation_date.desc()"
+        }
+    )
+    take_selects: list["TakeSelect"] = Relationship()
+    take_select_lists: list["TakeSelectList"] = Relationship(
+        sa_relationship_kwargs={
+            "order_by": "TakeSelectList.last_modified.desc()"
+        }
+    )
     resources: list[Resource] = Relationship(
         link_model=ResourceAssoc,
         back_populates="project"

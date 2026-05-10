@@ -70,6 +70,12 @@ class BaseMixin(IdMixin):
         dbsession.refresh(model)
         return model
 
+    def get_attr_relationship(self, relationship: str):
+        attr_relationship = getattr(self, relationship, None)
+        if attr_relationship is None:
+            raise BadRequestError(f"{self.__class__.__name__} does not have relationship {relationship}")
+        return attr_relationship
+
     def set_creation_stamp(self, user_id: str):
         # track the creating user
         self.created_by = user_id
