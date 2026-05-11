@@ -1,25 +1,24 @@
 import uuid
 from typing import Optional
-from fastapi import (
-    Depends,
-    HTTPException,
-    APIRouter,
-    status
-)
-from sqlmodel import (
-    Session,
-)
+from fastapi import Depends, APIRouter
+from sqlmodel import Session as DBSession
 from ..models import get_session
 from ..models.physical_asset import PhysicalAsset, EPhysicalAssetType
-from ..models.project import Project
+from .base import (
+    kls_get_by_id,
+    kls_update,
+    kls_get_by_code,
+    kls_get_attrs,
+    kls_create
+)
 
 router = APIRouter(prefix="/physical_assets", tags=["physical_assets"])
 
 @router.get("", response_model=list[PhysicalAsset])
-def get_all_physical_asset(
+def get_all(
     type: Optional[EPhysicalAssetType] = None,
     project_id: Optional[uuid.UUID] = None,
-    dbsession: Session = Depends(get_session)
+    dbsession: DBSession = Depends(get_session)
 ):
     return PhysicalAsset.get_all(
         dbsession,
@@ -28,39 +27,23 @@ def get_all_physical_asset(
     )
 
 @router.post("", response_model=PhysicalAsset)
-def create_physical_asset(physical_asset: PhysicalAsset, dbsession: Session = Depends(get_session)):
-    return PhysicalAsset.create("shawn", physical_asset, dbsession)
+def create(physical_asset: PhysicalAsset, dbsession: DBSession = Depends(get_session)):
+    user_id = "shawn"
+    return kls_create(PhysicalAsset, user_id, physical_asset, dbsession)
 
 @router.get("/{id}", response_model=PhysicalAsset)
-def get_physical_asset_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
-    physical_asset = PhysicalAsset.get_by_id(id, dbsession)
-    if not physical_asset:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"physical_asset id {id} Not Found"
-        )
-    return physical_asset
+def get_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
+    return kls_get_by_id(PhysicalAsset, id, dbsession)
 
 @router.put("/{id}", response_model=PhysicalAsset)
-def update_physical_asset(id: uuid.UUID, physical_asset_data: PhysicalAsset, dbsession: Session = Depends(get_session)):
-    physical_asset = PhysicalAsset.update("shawn", id, physical_asset_data, dbsession)
-    if physical_asset is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"physical_asset id {id} Not Found"
-        )
-    return physical_asset
+def update(id: uuid.UUID, physical_asset_data: PhysicalAsset, dbsession: Session = Depends(get_session)):
+    user_id = "shawn"
+    return kls_update(PhysicalAsset, user_id, id, physical_asset_data, dbsession)
 
 @router.get("/", response_model=PhysicalAsset)
 def get_by_code(code: str, dbsession: Session = Depends(get_session)):
-    physical_asset = PhysicalAsset.get_by_code(dbsession, code)
-    if physical_asset is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"physical_asset code {code} Not Found"
-        )
-    return physical_asset
+    return kls_get_by_code(PhysicalAsset, code, dbsession)
 
-@router.get("/{id}/{attr}", response_model=PhysicalAsset)
-def get_attrs(dbsession: Session = Depends(get_session)):
-    pass
+@router.get("/{id}/{attr}", response_model=Any)
+def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
+    return kls_get_attrs(PhysicalAsset, id, attr, dbsession)

@@ -7,18 +7,24 @@ from fastapi import (
     status
 )
 from sqlmodel import Session as DBSession
-
 from ..models import get_session
 from ..models.project import Project
 from ..models.location import Location
 from ..models.session import Session
 from ..models.take import Take
-from ..exc import BadRequestError, NotFoundError
+from ..exc import NotFoundError
+from .base import (
+    kls_get_by_id,
+    kls_update,
+    kls_get_by_code,
+    kls_get_attrs,
+    kls_create
+)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 @router.get("", response_model=list[Project])
-def get_all_project(
+def get_all(
     is_active: Optional[bool] = None,
     client_code: Optional[str] = None,
     dbsession: DBSession = Depends(get_session)
@@ -30,15 +36,9 @@ def get_all_project(
     )
 
 @router.post("", response_model=Project)
-def create_project(project: Project, dbsession: DBSession = Depends(get_session)):
+def create(project: Project, dbsession: DBSession = Depends(get_session)):
     user_id = "unknown"
-    try:
-        return Project.create(user_id, project, dbsession)
-    except BadRequestError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(err)
-        )
+    return kls_create(Project, user_id, project, dbsession)
 
 @router.get("/clients", response_model=list[dict])
 def get_all_clients(is_active: Optional[bool] = None, dbsession: DBSession = Depends(get_session)):
@@ -48,35 +48,17 @@ def get_all_clients(is_active: Optional[bool] = None, dbsession: DBSession = Dep
     )
 
 @router.get("/{id}", response_model=Project)
-def get_project_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
-    try:
-        return Project.get_by_id(id, dbsession)
-    except NotFoundError as err:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(err)
-        )
+def get_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
+    return kls_get_by_id(Project, id, dbsession)
 
 @router.put("/{id}", response_model=Project)
-def update_project(id: uuid.UUID, project_data: Project, dbsession: DBSession = Depends(get_session)):
-    try:
-        return Project.update("shawn", id, project_data, dbsession)
-    except NotFoundError as err:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(err)
-        )
+def update(id: uuid.UUID, project_data: Project, dbsession: DBSession = Depends(get_session)):
+    user_id = "shawn"
+    return kls_update(Project, user_id, id, project_data, dbsession)
 
 @router.get("/", response_model=Project)
 def get_by_code(code: str, dbsession: DBSession = Depends(get_session)):
-    try:
-        return Project.get_by_code(dbsession, code)
-    except NotFoundError as err:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(err)
-        )
-
+    return kls_get_by_code(Project, code, dbsession)
 
 @router.get("/{id}/locations", response_model=list[Location])
 def get_all_locations(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
@@ -106,18 +88,4 @@ def get_next_take_from_slate(id: uuid.UUID, slate: str, dbsession: DBSession = D
 def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
     if attr == "slates":
         return Take.get_all_slates(dbsession, id)
-    try:
-        project = Project.get_by_id(id, dbsession)
-        return project.get_attr_relationship(attr)
-    except BadRequestError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(err)
-        )
-    except NotFoundError as err:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(err)
-        )
-
-
+    return kls_get_attrs(Project, id, attr, dbsession)
