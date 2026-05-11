@@ -40,6 +40,13 @@ def create_project(project: Project, dbsession: DBSession = Depends(get_session)
             detail=str(err)
         )
 
+@router.get("/clients", response_model=list[dict])
+def get_all_clients(is_active: Optional[bool] = None, dbsession: DBSession = Depends(get_session)):
+    return Project.get_all_clients(
+        dbsession,
+        is_active=is_active
+    )
+
 @router.get("/{id}", response_model=Project)
 def get_project_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
     try:
@@ -70,37 +77,11 @@ def get_by_code(code: str, dbsession: DBSession = Depends(get_session)):
             detail=str(err)
         )
 
-# FIXME: original route should be
-# /projects/{clients}. for now not
-# to break the rest of the code
-# added as /project_clients
-@router.get("_clients", response_model=list[dict])
-def get_all_clients(is_active: Optional[bool] = None, dbsession: DBSession = Depends(get_session)):
-    return Project.get_all_clients(
-        dbsession,
-        is_active=is_active
-    )
 
 @router.get("/{id}/locations", response_model=list[Location])
 def get_all_locations(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
     try:
         return Session.get_all_locations(dbsession, id)
-    except NotFoundError as err:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(err)
-        )
-
-@router.get("/{id}/{attr}", response_model=Any)
-def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
-    try:
-        project = Project.get_by_id(id, dbsession)
-        return project.get_attr_relationship(attr)
-    except BadRequestError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(err)
-        )
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -120,3 +101,23 @@ def get_next_take_from_slate(id: uuid.UUID, slate: str, dbsession: DBSession = D
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(err)
         )
+
+@router.get("/{id}/{attr}", response_model=Any)
+def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
+    if attr == "slates":
+        return Take.get_all_slates(dbsession, id)
+    try:
+        project = Project.get_by_id(id, dbsession)
+        return project.get_attr_relationship(attr)
+    except BadRequestError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(err)
+        )
+    except NotFoundError as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(err)
+        )
+
+
