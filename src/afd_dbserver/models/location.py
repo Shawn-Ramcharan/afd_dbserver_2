@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session as DBSession
 from sqlmodel import (
@@ -8,6 +8,8 @@ from sqlmodel import (
     select
 )
 from .mixin import BaseMixin, AttrMixin
+if TYPE_CHECKING:
+    from .session import Session
 
 class Location(BaseMixin, AttrMixin, SQLModel, table=True):
     """ A physical location where a shoot is happening.
