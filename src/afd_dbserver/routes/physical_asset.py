@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Optional, Any
 from fastapi import Depends, APIRouter
 from sqlmodel import Session as DBSession
 from ..models import get_session
@@ -32,16 +32,16 @@ def create(physical_asset: PhysicalAsset, dbsession: DBSession = Depends(get_ses
     return kls_create(PhysicalAsset, user_id, physical_asset, dbsession)
 
 @router.get("/{id}", response_model=PhysicalAsset)
-def get_by_id(id: uuid.UUID, dbsession: Session = Depends(get_session)):
+def get_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
     return kls_get_by_id(PhysicalAsset, id, dbsession)
 
 @router.put("/{id}", response_model=PhysicalAsset)
-def update(id: uuid.UUID, physical_asset_data: PhysicalAsset, dbsession: Session = Depends(get_session)):
+def update(id: uuid.UUID, physical_asset_data: PhysicalAsset, dbsession: DBSession = Depends(get_session)):
     user_id = "shawn"
     return kls_update(PhysicalAsset, user_id, id, physical_asset_data, dbsession)
 
 @router.get("/", response_model=PhysicalAsset)
-def get_by_code(code: str, dbsession: Session = Depends(get_session)):
+def get_by_code(code: str, dbsession: DBSession = Depends(get_session)):
     return kls_get_by_code(PhysicalAsset, code, dbsession)
 
 @router.get("/{id}/{attr}", response_model=Any)
