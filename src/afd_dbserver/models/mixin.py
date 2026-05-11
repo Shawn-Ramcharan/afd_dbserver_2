@@ -28,7 +28,7 @@ class IdMixin(SQLModel):
         except NoResultFound:
             raise NotFoundError(cls, id_=id_)
 
-class BaseMixin(IdMixin):
+class BaseMixin[M](IdMixin):
     """BaseMixin"""
 
     created_by: str = Field(nullable=False)
@@ -43,7 +43,7 @@ class BaseMixin(IdMixin):
     )
 
     @classmethod
-    def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
+    def create(cls, user_id: str, payload: M, dbsession: DBSession):
         payload.set_creation_stamp(user_id)
         model = cls.model_validate(payload)
         try:
@@ -55,7 +55,7 @@ class BaseMixin(IdMixin):
         return model
 
     @classmethod
-    def update(cls, user_id: str, id_: uuid.UUID, payload: SQLModel, dbsession: DBSession):
+    def update(cls, user_id: str, id_: uuid.UUID, payload: M, dbsession: DBSession):
         model = cls.get_by_id(id_, dbsession)
         model.update_stamp(user_id)
         attrs = getattr(payload, "attrs", None)

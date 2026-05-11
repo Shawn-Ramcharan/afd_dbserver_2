@@ -1,11 +1,10 @@
 import uuid
-from typing import Any
 from fastapi import HTTPException, status
-from sqlmodel import SQLModel
 from sqlmodel import Session as DBSession
 from ..exc import BadRequestError, NotFoundError
+from ..models.mixin import BaseMixin
 
-def kls_create(klass_: Any, user_id: str, payload: SQLModel, dbsession: DBSession):
+def kls_create[M: BaseMixin](klass_: M, user_id: str, payload: M, dbsession: DBSession):
     try:
         return klass_.create(user_id, payload, dbsession)
     except BadRequestError as err:
@@ -14,7 +13,7 @@ def kls_create(klass_: Any, user_id: str, payload: SQLModel, dbsession: DBSessio
             detail=str(err)
         )
 
-def kls_get_by_id(klass_: Any, id: uuid.UUID, dbsession: DBSession):
+def kls_get_by_id[M: BaseMixin](klass_: M, id: uuid.UUID, dbsession: DBSession):
     try:
         return klass_.get_by_id(id, dbsession)
     except NotFoundError as err:
@@ -22,7 +21,7 @@ def kls_get_by_id(klass_: Any, id: uuid.UUID, dbsession: DBSession):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(err)
         )
-def kls_update(klass_: Any, user_id: str, id: uuid.UUID, payload: SQLModel, dbsession: DBSession):
+def kls_update[M: BaseMixin](klass_: M, user_id: str, id: uuid.UUID, payload: M, dbsession: DBSession):
     try:
         return klass_.update(user_id, id, payload, dbsession)
     except NotFoundError as err:
@@ -31,7 +30,7 @@ def kls_update(klass_: Any, user_id: str, id: uuid.UUID, payload: SQLModel, dbse
             detail=str(err)
         )
 
-def kls_get_by_code(klass_: Any, code: str, dbsession: DBSession):
+def kls_get_by_code[M: BaseMixin](klass_: M, code: str, dbsession: DBSession):
     try:
         return klass_.get_by_code(dbsession, code)
     except NotFoundError as err:
@@ -40,7 +39,16 @@ def kls_get_by_code(klass_: Any, code: str, dbsession: DBSession):
             detail=str(err)
         )
 
-def kls_get_attrs(klass_: Any, id: uuid.UUID, attr: str, dbsession: DBSession):
+def kls_get_by_name[M: BaseMixin](klass_: M, name: str, dbsession: DBSession):
+    try:
+        return klass_.get_by_name(dbsession, name)
+    except NotFoundError as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(err)
+        )
+
+def kls_get_attrs[M: BaseMixin](klass_: M, id: uuid.UUID, attr: str, dbsession: DBSession):
     try:
         db_object = klass_.get_by_id(id, dbsession)
         return db_object.get_attr_relationship(attr)

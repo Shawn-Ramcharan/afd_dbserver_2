@@ -22,6 +22,7 @@ from .base import (
 )
 
 router = APIRouter(prefix="/projects", tags=["projects"])
+attr_router = APIRouter(prefix="/projects/{id}/{attrs}", tags=["projects"])
 
 @router.get("", response_model=list[Project])
 def get_all(
@@ -84,7 +85,7 @@ def get_next_take_from_slate(id: uuid.UUID, slate: str, dbsession: DBSession = D
             detail=str(err)
         )
 
-@router.get("/{id}/{attr}", response_model=Any)
+@attr_router.get("", response_model=Any)
 def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
     if attr == "slates":
         return Take.get_all_slates(dbsession, id)

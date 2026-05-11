@@ -68,7 +68,7 @@ class Session(
         dbsession: DBSession,
         project_id: uuid.UUID,
         location_ids: Optional[list[uuid.UUID]] = None,
-        shoot_dates: Optional[list[datetime]] = None,
+        shoot_dates: Optional[list[date]] = None,
     ):
         sessions = select(cls).where(cls.project_id == project_id)
         # optional Location filter
