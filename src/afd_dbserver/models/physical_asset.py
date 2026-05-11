@@ -12,8 +12,7 @@ from sqlmodel import (
     select
 )
 from .mixin import BaseMixin, AttrMixin
-from .project import Project
-from ..exc import BadRequestError, NotFoundError
+from ..exc import NotFoundError, BadRequestError
 
 if TYPE_CHECKING:
     from .solver_setup import SolverSetup
@@ -33,7 +32,7 @@ class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
         sa_column=Column(SqlaEnum(EPhysicalAssetType,name='ephysicalassettype'))
     )
     subject_id: Optional[str] = Field(default=None, max_length=128, unique=True)
-    solver_setups: "SolverSetup" = Relationship(back_populates="physical_asset")
+    solver_setups: list["SolverSetup"] = Relationship(back_populates="physical_asset")
 
     @classmethod
     def get_all(
@@ -43,8 +42,9 @@ class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
         project_id: Optional[uuid.UUID] = None
     ):
         from .solver_setup import SolverSetup
-        # if type_ is not None and type_ not in EPhysicalAssetType.__members__:
-        #     raise BadRequestError(f"Invalid {type_=} check valid type EPhysicalAssetType")
+        if type_ is not None:
+            if type_ not in EPhysicalAssetType.__members__:
+                raise BadRequestError(f"Invalid {type_=} check valid type EPhysicalAssetType")
         stmt = select(cls)
         if project_id is not None:
             stmt = select(SolverSetup).where(
