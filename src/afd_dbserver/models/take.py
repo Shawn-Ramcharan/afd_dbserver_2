@@ -1,6 +1,6 @@
 import uuid
 import enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Self
 from sqlalchemy import Enum as SqlaEnum
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import ARRAY, Text
@@ -12,7 +12,7 @@ from .resource_mixin import ResourceMixin
 from .project import Project
 from .resource import Resource, ResourceAssoc
 from .note import Note, NoteAssoc
-from ..exc import NotFoundError, BadRequestError
+from ..exc import NotFoundError, BadRequestError, InvalidEnumValueError
 
 if TYPE_CHECKING:
     from .take_select import TakeSelect
@@ -51,8 +51,8 @@ class Take(
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship(back_populates="takes")
     delivery_name: Optional[str] = Field(default=None, max_length=128)
-    slate: str = Field(max_length=128, nullable=False)
-    number: int = Field(nullable=False, default=1, ge=1)
+    slate: Optional[str] = Field(max_length=128, nullable=False)
+    number: Optional[int] = Field(nullable=False, default=1, ge=1)
     type_: ETakeType = Field(
         sa_column=Column(SqlaEnum(ETakeType, name="etaketype"), nullable=False)
     )
@@ -95,6 +95,21 @@ class Take(
     )
 
     @classmethod
+    def create(cls, user_id: str, payload: Self, dbsession: DBSession):
+        name = payload.name
+        token_idx = name.rfind("_")
+        slate = name[:token_idx]
+        try:
+            number = int(name[token_idx+1:].replace("tk",""))
+        except ValueError:
+            raise BadRequestError(f"Unable to extract take number from name: {name}."
+                "Should end with _tk## suffix.")
+        payload.number = number
+        payload.slate = slate
+        model = super(Take, cls).create(user_id, payload, dbsession)
+        return model
+
+    @classmethod
     def get_all(
         cls,
         dbsession: DBSession,
@@ -104,13 +119,14 @@ class Take(
     ):
         stmt = select(cls).where(cls.project_id==project_id)
         if omit_status:
-            if omit_status not in ETakeStatus.__members__:
-                raise BadRequestError(f"Invalid status(s) {omit_status=}")
+            for status_ in omit_status:
+                if status_.value not in ETakeStatus.__members__:
+                    raise InvalidEnumValueError(status_, ETakeStatus)
             stmt = stmt.where(not_(cls.status.in_(omit_status)))
         if type_:
             if type_ not in ETakeType.__members__:
-                raise BadRequestError(f"Invalid type_ {type_=}")
-            stmt = stmt.where(cls.type==type_)
+                raise InvalidEnumValueError(type_, ETakeType)
+            stmt = stmt.where(cls.type_ == type_)
         stmt.order_by(cls.creation_date.desc())
         return dbsession.exec(stmt).all()
 

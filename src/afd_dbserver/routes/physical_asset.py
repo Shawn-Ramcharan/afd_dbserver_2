@@ -13,6 +13,7 @@ from .base import (
 )
 
 router = APIRouter(prefix="/physical_assets", tags=["physical_assets"])
+attr_router = APIRouter(prefix="/physical_assets/{id}/{attr}", tags=["physical_assets"])
 
 @router.get("", response_model=list[PhysicalAsset])
 def get_all(
@@ -44,6 +45,6 @@ def update(id: uuid.UUID, physical_asset_data: PhysicalAsset, dbsession: DBSessi
 def get_by_code(code: str, dbsession: DBSession = Depends(get_session)):
     return kls_get_by_code(PhysicalAsset, code, dbsession)
 
-@router.get("/{id}/{attr}", response_model=Any)
+@attr_router.get("", response_model=Any)
 def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
     return kls_get_attrs(PhysicalAsset, id, attr, dbsession)

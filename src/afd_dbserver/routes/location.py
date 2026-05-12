@@ -16,6 +16,7 @@ from .base import (
 )
 
 router = APIRouter(prefix="/locations", tags=["locations"])
+attr_router = APIRouter(prefix="/locations/{id}/{attr}", tags=["locations"])
 
 @router.get("", response_model=list[Location])
 def get_all(dbsession: DBSession = Depends(get_session)):
@@ -39,6 +40,6 @@ def update(id: uuid.UUID, location_data: Location, dbsession: DBSession = Depend
 def get_by_code(code: str, dbsession: DBSession = Depends(get_session)):
     return kls_get_by_code(Location, code, dbsession)
 
-@router.get("/{id}/{attr}", response_model=Any)
+@attr_router.get("", response_model=Any)
 def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
     return kls_get_attrs(Location, id, attr, dbsession)

@@ -22,7 +22,7 @@ from .base import (
 )
 
 router = APIRouter(prefix="/projects", tags=["projects"])
-attr_router = APIRouter(prefix="/projects/{id}/{attrs}", tags=["projects"])
+attr_router = APIRouter(prefix="/projects/{id}/{attr}", tags=["projects"])
 
 @router.get("", response_model=list[Project])
 def get_all(

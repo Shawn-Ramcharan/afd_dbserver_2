@@ -1,8 +1,7 @@
 import uuid
-from typing import TYPE_CHECKING, Optional
-from sqlalchemy.exc import NoResultFound
+from typing import TYPE_CHECKING, Any, Optional, Self
 from sqlalchemy.schema import UniqueConstraint
-from datetime import datetime, date
+from datetime import date
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
 from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
@@ -11,7 +10,7 @@ from .project import Project
 from .location import Location
 from .note import Note, NoteAssoc
 from .resource import Resource, ResourceAssoc
-from ..exc import BadRequestError
+from ..exc import InvalidEnumValueError
 from .take import Take, ETakeType
 if TYPE_CHECKING:
     from .volume import Volume
@@ -31,17 +30,15 @@ class Session(
         ),
     )
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
-    project: Optional[Project] = Relationship(back_populates="sessions")
-    name: str = Field(max_length=128, nullable=False, index=True)
-    description: Optional[str] = Field(default=None, max_length=1024)
-    shoot_date: Optional[date] = Field(
-        default_factory=utcnow
-    )  # should be stored in timezone=UTC
-    timecode_rate: Optional[str] = Field(default="TCRate_30", max_length=32)
-    sample_rate: float = Field(default=30.0, ge=0.0)
-    folder: Optional[str] = Field(default=None)
+    name: Optional[str] = Field(max_length=128, nullable=False, index=True)
+    description: Optional[str] = Field(max_length=1024)
+    shoot_date: Optional[date] = Field(default_factory=utcnow)
+    timecode_rate: Optional[str] = Field(max_length=32)
+    sample_rate: float = Field(ge=0.0)
+    folder: Optional[str] = Field()
     location_id: uuid.UUID = Field(foreign_key="location_t.id", nullable=False)
-    location: Optional[Location] = Relationship(back_populates="sessions")
+    project: Project = Relationship(back_populates="sessions")
+    location: Location = Relationship(back_populates="sessions")
     volumes: list["Volume"] = Relationship(
         back_populates="session",
         # order_by="Volume.code.desc()"
@@ -58,9 +55,26 @@ class Session(
     resources: list[Resource] = Relationship(
         link_model=ResourceAssoc,
         back_populates="session",
-        # link_model="resource_assoc_t"
     )
 
+    @classmethod
+    def create(cls, user_id: str, payload: Self, dbsession: DBSession):
+        if payload.name is None:
+            shoot_date = str(payload.shoot_date).replace("-", "")
+            location = Location.get_by_id(payload.location_id, dbsession)
+            results = cls.get_all(
+                dbsession,
+                payload.project_id,
+                location_ids=[location.id,],
+                shoot_dates=[payload.shoot_date,]
+            )
+            number = len(results) + 1
+            payload.name = f"{shoot_date}_{location.code}_{number:02}"
+        if payload.sample_rate is None:
+            payload.sample_rate = 30
+        if payload.timecode_rate is None:
+            payload.timecode_rate = "TCRate_30"
+        return super(Session, cls).create(user_id, payload, dbsession)
 
     @classmethod
     def get_all(
@@ -117,10 +131,10 @@ class Session(
         location_ids = dbsession.exec(stmt).all()
         return [Location.get_by_id(loc_id, dbsession) for loc_id in location_ids]
 
-    def get_takes(self, dbsession: DBSession, type_: ETakeType | None = None):
+    def get_takes(self, dbsession: DBSession, type_: Optional[ETakeType] = None):
         stmt = select(Take).where(Take.session_id==self.id)
         if type_ is not None:
-            if type_ not in ETakeType.__members__:
-                raise BadRequestError(f"{type_} is not a valid Take Type")
+            if type_.value not in ETakeType.__members__:
+                raise InvalidEnumValueError(type_, ETakeType)
             stmt = stmt.where(Take.type_ == type_)
-        return dbsession.exec(stmt.order_by(Take.creation_date.desc())).all()
+        return dbsession.exec(stmt.order_by(Take.creation_date.desc())).unique().all()

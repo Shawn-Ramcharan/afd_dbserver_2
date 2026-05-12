@@ -23,6 +23,9 @@ app.include_router(session.router)
 # NOTE: Wiil need to add them last because
 # they may affect other routers
 app.include_router(project.attr_router)
+app.include_router(location.attr_router)
+app.include_router(appliance.attr_router)
+app.include_router(physical_asset.attr_router)
 app.include_router(session.attr_router)
 
 # @app.get("/projects", response_model=list[Any])

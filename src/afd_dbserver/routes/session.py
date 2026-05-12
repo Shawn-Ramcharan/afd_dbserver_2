@@ -8,9 +8,11 @@ from fastapi import (
     status
 )
 from sqlmodel import Session as DBSession
+
+from afd_dbserver.models.take import ETakeType
 from ..models import get_session
-from ..models.project import Project
 from ..models.session import Session
+from ..exc import BadRequestError
 from .base import (
     kls_get_by_id,
     kls_update,
@@ -19,15 +21,45 @@ from .base import (
 )
 
 project_router = APIRouter(prefix="/projects/{project_id}/sessions", tags=["sessions"])
-router = APIRouter(prefix="/sessions", tags=["sessions"])
-attr_router = APIRouter(prefix="/sessions/{id}/{attrs}", tags=["projects"])
+router = APIRouter(prefix="/sessions/{id}", tags=["sessions"])
+attr_router = APIRouter(prefix="/sessions/{id}/{attr}", tags=["sessions"])
 
 @project_router.post("", response_model=Session)
-def create(project: Project, dbsession: DBSession = Depends(get_session)):
+def create(project_id: uuid.UUID, payload: Session, dbsession: DBSession = Depends(get_session)):
     user_id = "unknown"
-    return kls_create(Session, user_id, project, dbsession)
+    payload.project_id = project_id
+    return kls_create(Session, user_id, payload, dbsession)
 
-@project_router.get("_a", response_model=list[Session])
+@project_router.get("", response_model=list[Session | date])
+def get_data(
+    project_id: uuid.UUID,
+    query: Optional[str] = None,
+    name: Optional[str] = None,
+    location_id: Optional[uuid.UUID] = None,
+    dbsession: DBSession = Depends(get_session)
+):
+    """
+    GET from /projects/{project_id}/sessions?&query=dates[&location_id=]
+    GET from /projects/{project_id}/sessions?name=&[location_id=]
+    """
+    if name and query:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid Request cant query dates and name"
+        )
+    if query == "dates":
+        return Session.get_all_dates(
+            dbsession,
+            project_id,
+            location_id
+        )
+    if name:
+        return Session.get_by_name(dbsession, project_id, name, location_id)
+
+# NOTE: Just put `/all` for now but would
+# like to change this to the original path
+# designe.
+@project_router.get("/all", response_model=list[Session])
 def get_all(
     project_id: uuid.UUID,
     location_ids: Optional[list[uuid.UUID]] = None,
@@ -45,46 +77,29 @@ def get_all(
         shoot_dates=shoot_dates
     )
 
-@project_router.get("", response_model=list[date])
-def get_all_dates(
-    project_id: uuid.UUID,
-    query: str,
-    location_id: Optional[uuid.UUID] = None,
-    dbsession: DBSession = Depends(get_session)
-):
-    """ GET from /projects/{id}/sessions?&query=dates[&location_id=]
-    """
-    if query == "dates":
-        return Session.get_all_dates(
-            dbsession,
-            project_id,
-            location_id
-        )
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=f"Invalid Query {query}"
-    )
-
-@router.get("/{id}", response_model=Session)
+@router.get("", response_model=Session)
 def get_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
     return kls_get_by_id(Session, id, dbsession)
 
-@router.put("/{id}", response_model=Session)
+@router.put("", response_model=Session)
 def update(id: uuid.UUID, session_data: Session, dbsession: DBSession = Depends(get_session)):
     user_id = "shawn"
     return kls_update(Session, user_id, id, session_data, dbsession)
 
-@project_router.get("", response_model=list[Session])
-def get_by_name(
-    project_id: uuid.UUID,
-    name: str,
-    location_id: Optional[uuid.UUID] = None,
+@attr_router.get("", response_model=Any)
+def get_attrs(
+    id: uuid.UUID,
+    attr: str,
+    type: Optional[ETakeType] = None,
     dbsession: DBSession = Depends(get_session)
 ):
-    """ GET from /projects/{id}/sessions?name=&[location_id=]
-    """
-    return Session.get_by_name(dbsession, project_id, name, location_id)
-
-@attr_router.get("", response_model=Any)
-def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
+    if attr == "takes":
+        session = kls_get_by_id(Session, id, dbsession)
+        try:
+            return session.get_takes(dbsession, type)
+        except BadRequestError as err:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(err)
+            )
     return kls_get_attrs(Session, id, attr, dbsession)

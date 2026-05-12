@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Self
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.exc import NoResultFound, IntegrityError
@@ -28,7 +28,7 @@ class IdMixin(SQLModel):
         except NoResultFound:
             raise NotFoundError(cls, id_=id_)
 
-class BaseMixin[M](IdMixin):
+class BaseMixin(IdMixin):
     """BaseMixin"""
 
     created_by: str = Field(nullable=False)
@@ -43,9 +43,9 @@ class BaseMixin[M](IdMixin):
     )
 
     @classmethod
-    def create(cls, user_id: str, payload: M, dbsession: DBSession):
+    def create(cls, user_id: str, payload: Self, dbsession: DBSession):
         payload.set_creation_stamp(user_id)
-        model = cls.model_validate(payload)
+        model = cls.model_validate_json(payload.model_dump_json())
         try:
             dbsession.add(model)
         except IntegrityError as err:
@@ -55,7 +55,7 @@ class BaseMixin[M](IdMixin):
         return model
 
     @classmethod
-    def update(cls, user_id: str, id_: uuid.UUID, payload: M, dbsession: DBSession):
+    def update(cls, user_id: str, id_: uuid.UUID, payload: Self, dbsession: DBSession):
         model = cls.get_by_id(id_, dbsession)
         model.update_stamp(user_id)
         attrs = getattr(payload, "attrs", None)
