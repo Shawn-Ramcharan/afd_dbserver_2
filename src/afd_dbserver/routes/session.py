@@ -93,6 +93,11 @@ def get_attrs(
     type: Optional[ETakeType] = None,
     dbsession: DBSession = Depends(get_session)
 ):
+    if attr != "take" and type is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"cannot get types for {attr}"
+        )
     if attr == "takes":
         session = kls_get_by_id(Session, id, dbsession)
         try:
