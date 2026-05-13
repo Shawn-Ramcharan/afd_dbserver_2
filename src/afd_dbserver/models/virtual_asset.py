@@ -1,7 +1,7 @@
 import uuid
 import logging
 import enum
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import Enum as SqlaEnum
@@ -13,7 +13,7 @@ from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .resource import Resource, ResourceAssoc
-from ..exc import NotFoundError
+from ..exc import NotFoundError, InvalidEnumValueError
 
 if TYPE_CHECKING:
     from .mapping import Mapping
@@ -43,9 +43,32 @@ class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table
     project_id: uuid.UUID = Field(foreign_key="project_t.id", nullable=False)
     project: Project = Relationship(back_populates="virtual_assets")
     revisions: list["VirtualAssetRevision"] = Relationship(
-        # order_by="desc(VirtualAssetRevision.number)",
         back_populates="virtual_asset",
+        sa_relationship_kwargs={
+            "order_by": "VirtualAssetRevision.number.desc()",
+        }
     )
+
+    @classmethod
+    def get_by_code(cls, dbsession: DBSession, project_id: uuid.UUID, code: str):
+        stmt = select(cls).where(
+            cls.project_id == project_id,
+            cls.code == code
+        )
+        try:
+            return dbsession.exec(stmt).one()
+        except NoResultFound:
+            raise NotFoundError(cls, code=code)
+
+    @classmethod
+    def get_all_by_type(cls, dbsession: DBSession, project_id: uuid.UUID, type_: EVirtualAssetType):
+        if type_.value not in EVirtualAssetType.__members__:
+            raise InvalidEnumValueError(type_, EVirtualAssetType)
+        stmt = select(cls).where(
+            cls.project_id == project_id,
+            cls.type_ == type_
+        )
+        return dbsession.exec(stmt).all()
 
     def get_revision(self, dbsession: DBSession, number):
         stmt = select(VirtualAssetRevision).where(
@@ -56,6 +79,7 @@ class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table
             return dbsession.exec(stmt).one()
         except NoResultFound:
             raise NotFoundError(VirtualAssetRevision, id=self.id, number=number)
+
     def get_next_logical_number(self, dbsession: DBSession):
         """ Returns the next available version number.
         """
@@ -74,11 +98,7 @@ class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table
             VirtualAssetRevision.virtual_asset_id == self.id,
             VirtualAssetRevision.tags.contains(tags)
         )
-        try:
-            dbsession.exec(stmt).all()
-        except NoResultFound as err:
-            LOG.debug(err)
-            return []
+        return dbsession.exec(stmt).all()
 
 class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
     """ """
@@ -119,6 +139,16 @@ class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDat
         link_model=ResourceAssoc,
         back_populates="virtual_asset_revision",
     )
+
+    @classmethod
+    def create(cls, user_id: str, payload: Self, dbsession: DBSession):
+        number = getattr(payload, "number", None)
+        if number is None:
+            virtual_asset = VirtualAsset.get_by_id(payload.virtual_asset_id, dbsession)
+            number = virtual_asset.get_next_logical_number(dbsession)
+            payload.number = number
+        model = super(VirtualAssetRevision, cls).create(user_id, payload, dbsession)
+        return model
 
     def set_as_official(self, dbsession: DBSession):
         for revision in self.virtual_asset.get_all_with_tags(dbsession, [self.OFFICIAL]):

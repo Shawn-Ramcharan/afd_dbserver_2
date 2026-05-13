@@ -4,7 +4,24 @@ from afd_dbserver.routes import (
     location,
     appliance,
     physical_asset,
-    session
+    session,
+    take,
+    virtual_asset,
+    virtual_asset_revision,
+    note,
+    mapping,
+    # solver_setup,
+    # device,
+    # volume,
+    # timecode_range,
+    # capture_load,
+    # capture_load_entry,
+    # capture_load_entry_version,
+    # take_select,
+    # take_select_list,
+    # resource,
+    # version,
+    # item,
 )
 
 app = FastAPI()
@@ -18,6 +35,15 @@ app.include_router(physical_asset.router)
 # Project Scoped API Routes
 app.include_router(session.project_router)
 app.include_router(session.router)
+app.include_router(take.project_router)
+app.include_router(take.router)
+app.include_router(virtual_asset.project_router)
+app.include_router(virtual_asset.router)
+app.include_router(virtual_asset_revision.router)
+app.include_router(virtual_asset_revision.virtual_asset_router)
+app.include_router(note.router)
+app.include_router(mapping.project_router)
+app.include_router(mapping.router)
 
 # Attr Router
 # NOTE: Wiil need to add them last because
@@ -27,6 +53,11 @@ app.include_router(location.attr_router)
 app.include_router(appliance.attr_router)
 app.include_router(physical_asset.attr_router)
 app.include_router(session.attr_router)
+app.include_router(take.attr_router)
+app.include_router(virtual_asset.attr_router)
+app.include_router(virtual_asset_revision.attr_router)
+app.include_router(note.attr_router)
+app.include_router(mapping.attr_router)
 
 # @app.get("/projects", response_model=list[Any])
 # def home_page():

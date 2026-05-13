@@ -69,8 +69,10 @@ class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMo
 
     @classmethod
     def get_all(cls, dbsession: DBSession, project_id: uuid.UUID):
-        return cls.get_all_by_project(dbsession, project_id)
-        # return request.dbsession.query(cls).join(Project).filter(Project.id==project_id).order_by(desc(cls.creation_date)).all()
+        stmt = select(cls).where(
+            cls.project_id == project_id
+            ).order_by(cls.creation_date.desc())
+        return dbsession.exec(stmt).all()
 
     @classmethod
     def get(

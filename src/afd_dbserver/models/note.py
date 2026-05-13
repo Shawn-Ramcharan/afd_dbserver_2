@@ -1,6 +1,6 @@
 import uuid
 import enum
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional, Self
 from sqlalchemy import Enum as SqlaEnum
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, Column)
@@ -64,7 +64,8 @@ class Note(
     )
     PROJECT_ASSOC_CLS: ClassVar = NoteAssoc
 
-    def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):
+    @classmethod
+    def create(cls, user_id: str, payload: Self, dbsession: DBSession):
         note_ = super(Note, cls).create(user_id, payload, dbsession)
         take_id = getattr(payload, "take_id", None)
         session_id = getattr(payload, "session_id", None)

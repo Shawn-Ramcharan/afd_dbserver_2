@@ -1,3 +1,4 @@
+from typing import Optional
 import uuid
 from fastapi import HTTPException, status
 from sqlmodel import Session as DBSession
@@ -30,8 +31,15 @@ def kls_update[M: BaseMixin](klass_: M, user_id: str, id: uuid.UUID, payload: M,
             detail=str(err)
         )
 
-def kls_get_by_code[M: BaseMixin](klass_: M, code: str, dbsession: DBSession):
+def kls_get_by_code[M: BaseMixin](
+    klass_: M,
+    code: str,
+    dbsession: DBSession,
+    parent_id: Optional[uuid.UUID] = None
+):
     try:
+        if parent_id:
+            klass_.get_by_code(dbsession, parent_id, code)
         return klass_.get_by_code(dbsession, code)
     except NotFoundError as err:
         raise HTTPException(
