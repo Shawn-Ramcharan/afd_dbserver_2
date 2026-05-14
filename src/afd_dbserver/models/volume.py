@@ -1,11 +1,9 @@
 import uuid
-from typing import TYPE_CHECKING, Optional
-from sqlalchemy.exc import NoResultFound
+from typing import TYPE_CHECKING, Optional, Self
 from sqlalchemy.schema import UniqueConstraint
-from datetime import datetime, date
 from sqlmodel import Session as DBSession
-from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
+from sqlmodel import (SQLModel, Field, Relationship)
+from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
 from .resource_mixin import ResourceMixin
 from .resource import Resource, ResourceAssoc
 if TYPE_CHECKING:
@@ -35,13 +33,29 @@ class Volume(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMod
     capture_loads: list["CaptureLoad"] = Relationship(
         back_populates="volume",
         sa_relationship_kwargs={
-            # "order_by": "capture_load_t.creation_date.desc()",
+            "order_by": "capture_load_t.creation_date.desc()"
         }
     )
     resources: list["Resource"] = Relationship(
         link_model=ResourceAssoc,
         back_populates="volume"
     )
+
+    @classmethod
+    def create(cls, user_id: str, payload: Self, dbsession: DBSession):
+        from .capture_load import CaptureLoad
+        vol_model = super(Volume, cls).create(user_id, payload, dbsession)
+        cpl_payload = CaptureLoad(
+            project_id=payload.project_id,
+            name="default",
+            tags=["live"],
+            volume_id=vol_model.id,
+            created_by=user_id,
+            modified_by=user_id,
+            attrs={}
+        )
+        CaptureLoad.create(user_id, cpl_payload, dbsession)
+        return vol_model
 
     def delete(self, dbsession: DBSession):
         for device in self.devices:

@@ -140,10 +140,13 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
         take_id = None
         volume_id = None
         if target_owner is not None:
-            if target_owner.__class__.__name__ == "Volume":
-                volume_id = target_owner.id
-            elif target_owner.__class__.__name__ == "Take":
-                take_id = target_owner.id
+            match target_owner.__class__.__name__:
+                case "Volume":
+                    volume_id = target_owner.id
+                case "Take":
+                    take_id = target_owner.id
+                case _:
+                    pass
         tags = self.tags or []
         if self.LIVE in tags:
             tags.remove(self.LIVE)

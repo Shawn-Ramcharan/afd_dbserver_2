@@ -11,8 +11,8 @@ from afd_dbserver.routes import (
     note,
     mapping,
     solver_setup,
-    # device,
-    # volume,
+    device,
+    volume,
     # timecode_range,
     # capture_load,
     # capture_load_entry,
@@ -47,6 +47,10 @@ app.include_router(mapping.router)
 app.include_router(solver_setup.physical_asset_router)
 app.include_router(solver_setup.project_router)
 app.include_router(solver_setup.router)
+app.include_router(device.volume_router)
+app.include_router(device.router)
+app.include_router(volume.session_router)
+app.include_router(volume.router)
 
 # Attr Router
 # NOTE: Wiil need to add them last because
@@ -62,6 +66,8 @@ app.include_router(virtual_asset_revision.attr_router)
 app.include_router(note.attr_router)
 app.include_router(mapping.attr_router)
 app.include_router(solver_setup.attr_router)
+app.include_router(device.attr_router)
+app.include_router(volume.attr_router)
 
 # @app.get("/projects", response_model=list[Any])
 # def home_page():
