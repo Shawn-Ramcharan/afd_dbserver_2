@@ -45,24 +45,26 @@ class ResourceMixin(object):
         return dbsession.exec(stmt)
 
     def _get_owner_uri(self):
-        if self.__class__.__name__ == "Project":
-            return ""
-        elif self.__class__.__name__ == "SolverSetup":
-            return f"/solver_setup/{self.name}"
-        elif self.__class__.__name__ == "VirtualAssetRevision":
-            return f"/virtual_asset/{self.virtual_asset.code}/revision/{self.number}"
-        elif self.__class__.__name__ == "Mapping":
-            return f"/mapping/{self.fqn}-{self.name}"
-        elif self.__class__.__name__ == "Session":
-            return f"/session/{self.name}"
-        elif self.__class__.__name__ == "Volume":
-            return f"/session/{self.session.name}/volume/{self.code}"
-        elif self.__class__.__name__ == "Device":
-            return f"/session/{self.volume.session.name}/volume/{self.volume.code}/device/{self.code}"
-        elif self.__class__.__name__ == "Take":
-            return f"/take/{self.name}"
-        elif self.__class__.__name__ == "TakeSelect":
-            return f"/take_select/{self.id}"
+
+        match self.__class__.__name__:
+            case "Project":
+                return ""
+            case "SolverSetup":
+                return f"/solver_setup/{self.name}"
+            case "VirtualAssetRevision":
+                return f"/virtual_asset/{self.virtual_asset.code}/revision/{self.number}"
+            case "Mapping":
+                return f"/mapping/{self.fqn}-{self.name}"
+            case "Session":
+                return f"/session/{self.name}"
+            case "Volume":
+                return f"/session/{self.session.name}/volume/{self.code}"
+            case "Device":
+                return f"/session/{self.volume.session.name}/volume/{self.volume.code}/device/{self.code}"
+            case "Take":
+                return f"/take/{self.name}"
+            case "TakeSelect":
+                return f"/take_select/{self.id}"
 
     def _create_resource(
         self,
