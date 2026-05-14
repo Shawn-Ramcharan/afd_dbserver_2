@@ -10,7 +10,7 @@ from afd_dbserver.routes import (
     virtual_asset_revision,
     note,
     mapping,
-    # solver_setup,
+    solver_setup,
     # device,
     # volume,
     # timecode_range,
@@ -44,6 +44,9 @@ app.include_router(virtual_asset_revision.virtual_asset_router)
 app.include_router(note.router)
 app.include_router(mapping.project_router)
 app.include_router(mapping.router)
+app.include_router(solver_setup.physical_asset_router)
+app.include_router(solver_setup.project_router)
+app.include_router(solver_setup.router)
 
 # Attr Router
 # NOTE: Wiil need to add them last because
@@ -58,6 +61,7 @@ app.include_router(virtual_asset.attr_router)
 app.include_router(virtual_asset_revision.attr_router)
 app.include_router(note.attr_router)
 app.include_router(mapping.attr_router)
+app.include_router(solver_setup.attr_router)
 
 # @app.get("/projects", response_model=list[Any])
 # def home_page():

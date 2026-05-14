@@ -17,6 +17,10 @@ from .base import (
     kls_create
 )
 
+physical_asset_router = APIRouter(
+    prefix="/physical_assets/{physical_asset_id}/solver_setups",
+    tags=["SolverSetups"]
+)
 project_router = APIRouter(
     prefix="/projects/{project_id}/solver_setups",
     tags=["SolverSetups"]
@@ -31,11 +35,11 @@ attr_router = APIRouter(
     tags=["SolverSetups"]
 )
 
-@project_router.get("", response_model=list[SolverSetup])
-def get_all(project_id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
+@physical_asset_router.get("", response_model=list[SolverSetup])
+def get_all(project_id: uuid.UUID, physical_asset_id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
     """ GET to /physical_assets/{id}/solver_setups?project_id=
     """
-    return SolverSetup.get_all(dbsession, project_id)
+    return SolverSetup.get_all(dbsession, project_id, physical_asset_id)
 
 @project_router.post("", response_model=SolverSetup)
 def create(project_id: uuid.UUID, payload: SolverSetup, dbsession: DBSession = Depends(get_session)):
@@ -54,12 +58,17 @@ def update(id: uuid.UUID, payload: SolverSetup, dbsession: DBSession = Depends(g
     user_id = "shawn"
     return kls_update(SolverSetup, user_id, id, payload, dbsession)
 
-@router.get("", response_model=SolverSetup)
-def get(source_id: uuid.UUID, target_id: uuid.UUID, name: str, dbsession: DBSession = Depends(get_session)):
+@physical_asset_router.get("", response_model=SolverSetup)
+def get(physical_asset_id: uuid.UUID, virtual_asset_revision_id: uuid.UUID, name: str, dbsession: DBSession = Depends(get_session)):
     """ GET to /physical_assets/{id}/solver_setups?virtual_asset_revision_id=&name=
     """
     try:
-        return Mapping.get(dbsession, source_id, target_id, name)
+        return SolverSetup.get(
+            dbsession,
+            physical_asset_id,
+            virtual_asset_revision_id,
+            name
+        )
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

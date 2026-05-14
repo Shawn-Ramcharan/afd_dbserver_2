@@ -39,12 +39,14 @@ class SolverSetup(
     )
     physical_asset: PhysicalAsset = Relationship(
         back_populates="solver_setups",
-        #lazy="joined"
+        sa_relationship_kwargs={"lazy": "joined"}
     )
     virtual_asset_revision_id: uuid.UUID = Field(
         foreign_key="virtual_asset_revision_t.id", nullable=False
     )
-    virtual_asset_revision: "VirtualAssetRevision" = Relationship()#lazy="joined")
+    virtual_asset_revision: "VirtualAssetRevision" = Relationship(
+        sa_relationship_kwargs={"lazy": "joined"}
+    )
     resources: Resource = Relationship(
         link_model=ResourceAssoc,
         back_populates="solver_setup"
