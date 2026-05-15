@@ -44,11 +44,11 @@ def _get_cpl_owner(payload: CaptureLoad, dbsession: DBSession):
         )
 
 @project_router.post("", response_model=CaptureLoad)
-def create(volume_id: uuid.UUID, payload: CaptureLoad, dbsession: DBSession = Depends(get_session)):
+def create(project_id: uuid.UUID, payload: CaptureLoad, dbsession: DBSession = Depends(get_session)):
     """ POST to /project/{project_id}/capture_loads
     """
     user_id = "unknown"
-    payload.volume_id = volume_id
+    payload.project_id = project_id
     return kls_create(CaptureLoad, user_id, payload, dbsession)
 
 @router.get("", response_model=CaptureLoad)
@@ -100,8 +100,12 @@ def get_by_tag(
 ):
     """ GET /projects/{id}/capture_loads?[volume_id=][take_id=]&tag=&tag=
     """
-    owner = _get_cpl_owner(payload, dbsession)
-    return CaptureLoad.get_capture_loads_by_tags(dbsession, owner, tags)
+    return CaptureLoad.get_capture_loads_by_tags(
+        dbsession,
+        take_id=take_id,
+        volume_id=volume_id,
+        tags=tags
+    )
 
 @attr_router.get("", response_model=Any)
 def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):

@@ -38,7 +38,9 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     take: Optional["Take"] = Relationship(back_populates="capture_loads")
     entries: list["CaptureLoadEntry"] = Relationship(
         back_populates="capture_load",
-        # order_by="CaptureLoadEntry.index.asc()"
+        sa_relationship_kwargs={
+            "order_by": "CaptureLoadEntry.index.asc()"
+        }
     )
 
     @classmethod
@@ -58,17 +60,18 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     def get_capture_loads_by_tags(
         cls,
         dbsession: DBSession,
-        owner: Any,
+        take_id: Optional[uuid.UUID] = None,
+        volume_id: Optional[uuid.UUID] = None,
         tags: list[str]
     ):
-        if owner.__class__.__name__ == "Volume":
+        if volume_id:
             stmt = select(CaptureLoad).where(
-                CaptureLoad.volume_id == owner.id,
+                CaptureLoad.volume_id == volume_id,
                 CaptureLoad.tags.contains(tags)
             )
-        elif owner.__class__.__name__ == "Take":
+        elif take_id:
             stmt = select(CaptureLoad).where(
-                CaptureLoad.take_id == owner.id,
+                CaptureLoad.take_id == take_id,
                 CaptureLoad.tags.contains(tags)
             )
         else:
@@ -80,7 +83,11 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
             return
         if self.tags is None:
             self.tags = []
-        for capture_load in CaptureLoad.get_capture_loads_by_tags(dbsession, self.volume, [self.LIVE]):
+        for capture_load in CaptureLoad.get_capture_loads_by_tags(
+            dbsession,
+            volume_id=self.volume_id,
+            tags=[self.LIVE]
+        ):
             if capture_load.tags is None:
                 continue
             if self.LIVE in capture_load.tags:
@@ -165,7 +172,7 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
         for entry in self.entries:
             if enabled_entries_only is True and entry.is_enabled is False:
                 continue
-            entry.copy_cple(user_id, dbsession, new_capture_load)
+            entry.copy_cple(dbsession, user_id, new_capture_load)
         dbsession.commit()
         return new_capture_load
 
@@ -199,7 +206,9 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
     has_fingers: Optional[bool] = Field(default=False)
     versions: list["CaptureLoadEntryVersion"] = Relationship(
         back_populates="capture_load_entry",
-        # order_by="CaptureLoadEntryVersion.name.asc()",
+        sa_relationship_kwargs={
+            "order_by": "CaptureLoadEntryVersion.name.asc()",
+        }
     )
 
     @classmethod
@@ -291,22 +300,24 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
         dbsession: DBSession,
         user_id: str,
         name: str,
-        version: Any, # Should be Version
+        version_id: uuid.UUID,
         attrs: dict
     ):
-        paylaod = SQLModel(
-            project_id=version.project.id,
+        paylaod = CaptureLoadEntryVersion(
+            project_id=self.project.id,
             capture_load_entry_id=self.id,
             name=name,
-            version_id=version.id,
+            version_id=version_id,
+            created_by=user_id,
+            modified_by=user_id,
             attrs=attrs
         )
         try:
             cle_version = self.get_version_by_name(dbsession, name)
             LOG.debug("Updating {0} record with id={1}".format(cle_version.__class__.__name__, cle_version.id))
-            self.__class__.update(user_id, cle_version.id, paylaod, dbsession)
+            CaptureLoadEntryVersion.update(user_id, cle_version.id, paylaod, dbsession)
         except NotFoundError:
-            cle_version = self.__class__.create(user_id, paylaod, dbsession)
+            cle_version = CaptureLoadEntryVersion.create(user_id, paylaod, dbsession)
             LOG.debug("Created new {0} record with id={1}".format(cle_version.__class__.__name__, cle_version.id))
         return cle_version
 
@@ -340,6 +351,10 @@ class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, t
     def __repr__(self):
         return "<%s : %d. %s>"%(self.__class__.__name__, self.index, self.id)
 
+class CaptureLoadEntryVersionAddOrUpdate(SQLModel):
+    name: str
+    version_id: uuid.UUID
+
 class CaptureLoadEntryVersion(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
     __tablename__ = "capture_load_entry_version_t"
     __table_args__ = (UniqueConstraint(
@@ -356,12 +371,14 @@ class CaptureLoadEntryVersion(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLM
     )
     capture_load_entry: "CaptureLoadEntry" = Relationship(
         back_populates="versions",
-        #order_by="CaptureLoadEntryVersion.name.asc()"
+        sa_relationship_kwargs={
+            "order_by": "CaptureLoadEntryVersion.name.asc()"
+        }
     )
     version_id: uuid.UUID = Field(foreign_key="version_t.id", nullable=False)
     version: Version = Relationship()
 
-    def copy_cplv(self, dbsession: DBSession, user_id: str, capture_load_entry: CaptureLoadEntry):
+    def copy_cplev(self, dbsession: DBSession, user_id: str, capture_load_entry: CaptureLoadEntry):
         payload = SQLModel(
             project_id=capture_load_entry.project.id,
             capture_load_entry_id=capture_load_entry.id,
@@ -373,8 +390,3 @@ class CaptureLoadEntryVersion(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLM
         dbsession.add(copied_cplev)
         dbsession.commit()
         return copied_cplev
-
-    # def delete(self, request):
-    #     LOG.debug("Deleting CaptureLoadEntryVersion: {0}".format(self.id))
-    #     request.dbsession.delete(self)
-
