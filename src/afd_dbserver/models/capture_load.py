@@ -60,9 +60,9 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     def get_capture_loads_by_tags(
         cls,
         dbsession: DBSession,
+        tags: list[str],
         take_id: Optional[uuid.UUID] = None,
         volume_id: Optional[uuid.UUID] = None,
-        tags: list[str]
     ):
         if volume_id:
             stmt = select(CaptureLoad).where(
