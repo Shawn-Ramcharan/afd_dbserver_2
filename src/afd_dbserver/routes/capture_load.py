@@ -102,9 +102,9 @@ def get_by_tag(
     """
     return CaptureLoad.get_capture_loads_by_tags(
         dbsession,
+        tags=tags,
         take_id=take_id,
         volume_id=volume_id,
-        tags=tags
     )
 
 @attr_router.get("", response_model=Any)

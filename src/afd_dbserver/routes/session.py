@@ -20,9 +20,18 @@ from .base import (
     kls_create
 )
 
-project_router = APIRouter(prefix="/projects/{project_id}/sessions", tags=["sessions"])
-router = APIRouter(prefix="/sessions/{id}", tags=["sessions"])
-attr_router = APIRouter(prefix="/sessions/{id}/{attr}", tags=["sessions"])
+project_router = APIRouter(
+    prefix="/projects/{project_id}/sessions",
+    tags=["Sessions"]
+)
+router = APIRouter(
+    prefix="/sessions/{id}",
+    tags=["Sessions"]
+)
+attr_router = APIRouter(
+    prefix="/sessions/{id}/{attr}",
+    tags=["Sessions"]
+)
 
 @project_router.post("", response_model=Session)
 def create(project_id: uuid.UUID, payload: Session, dbsession: DBSession = Depends(get_session)):

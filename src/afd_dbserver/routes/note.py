@@ -5,7 +5,7 @@ from fastapi import (
     APIRouter,
 )
 from sqlmodel import Session as DBSession
-from ..models import Note
+from ..models.note import Note
 from ..models import get_session
 from .base import (
     kls_get_by_id,

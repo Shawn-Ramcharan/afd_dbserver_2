@@ -8,7 +8,7 @@ from fastapi import (
 )
 from sqlmodel import Session as DBSession
 from ..models import get_session
-from ..models import (
+from ..models.virtual_asset import (
     VirtualAsset,
     VirtualAssetRevision,
 )

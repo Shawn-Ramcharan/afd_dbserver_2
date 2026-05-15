@@ -12,8 +12,8 @@ from .base import (
     kls_create
 )
 
-router = APIRouter(prefix="/physical_assets", tags=["physical_assets"])
-attr_router = APIRouter(prefix="/physical_assets/{id}/{attr}", tags=["physical_assets"])
+router = APIRouter(prefix="/physical_assets", tags=["PhysicalAssets"])
+attr_router = APIRouter(prefix="/physical_assets/{id}/{attr}", tags=["PhysicalAssets"])
 
 @router.get("", response_model=list[PhysicalAsset])
 def get_all(

@@ -8,9 +8,7 @@ from fastapi import (
 )
 from sqlmodel import Session as DBSession
 from ..models import get_session
-from ..models import (
-    Mapping,
-)
+from ..models.mapping import Mapping
 from ..exc import NotFoundError
 from .base import (
     kls_get_by_id,
@@ -53,7 +51,7 @@ def update(id: uuid.UUID, payload: Mapping, dbsession: DBSession = Depends(get_s
     user_id = "shawn"
     return kls_update(Mapping, user_id, id, payload, dbsession)
 
-@_router.get("", response_model=Mapping)
+@router.get("", response_model=Mapping)
 def get(source_id: uuid.UUID, target_id: uuid.UUID, name: str, dbsession: DBSession = Depends(get_session)):
     try:
         return Mapping.get(dbsession, source_id, target_id, name)

@@ -6,7 +6,7 @@ from fastapi import (
 )
 from sqlmodel import Session as DBSession
 from ..models import get_session
-from ..models import Device
+from ..models.device import Device
 from .base import (
     kls_get_by_id,
     kls_update,

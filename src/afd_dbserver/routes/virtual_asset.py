@@ -8,9 +8,7 @@ from fastapi import (
 )
 from sqlmodel import Session as DBSession
 from ..models import get_session
-from ..models import (
-    VirtualAsset,
-)
+from ..models.virtual_asset import VirtualAsset
 from ..exc import BadRequestError
 from .base import (
     kls_get_by_id,

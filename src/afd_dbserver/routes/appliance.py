@@ -12,8 +12,8 @@ from .base import (
     kls_create
 )
 
-router = APIRouter(prefix="/appliances", tags=["appliances"])
-attr_router = APIRouter(prefix="/appliances/{id}/{attr}", tags=["appliances"])
+router = APIRouter(prefix="/appliances", tags=["Appliances"])
+attr_router = APIRouter(prefix="/appliances/{id}/{attr}", tags=["Appliances"])
 
 @router.get("", response_model=list[Appliance])
 def get_all(

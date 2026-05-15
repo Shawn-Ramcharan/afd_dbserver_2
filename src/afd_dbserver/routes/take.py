@@ -6,7 +6,11 @@ from fastapi import (
 )
 from sqlmodel import Session as DBSession
 from ..models import get_session
-from ..models.take import Take, ETakeType, ETakeStatus
+from ..models.take import (
+    Take,
+    ETakeType,
+    ETakeStatus
+)
 from .base import (
     kls_get_by_id,
     kls_update,
@@ -15,9 +19,16 @@ from .base import (
     kls_create
 )
 
-project_router = APIRouter(prefix="/projects/{project_id}/takes", tags=["takes"])
-router = APIRouter(prefix="/takes/{id}", tags=["takes"])
-attr_router = APIRouter(prefix="/takes/{id}/{attrs}", tags=["takes"])
+project_router = APIRouter(
+    prefix="/projects/{project_id}/takes",
+    tags=["Takes"]
+)
+router = APIRouter(
+    prefix="/takes/{id}", tags=["Takes"]
+)
+attr_router = APIRouter(
+    prefix="/takes/{id}/{attrs}", tags=["Takes"]
+)
 
 @project_router.get("", response_model=list[Take])
 def get_all(

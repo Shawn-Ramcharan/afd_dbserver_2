@@ -8,7 +8,7 @@ from fastapi import (
 )
 from sqlmodel import Session as DBSession
 from ..models import get_session
-from ..models import SolverSetup
+from ..models.solver_setup import SolverSetup
 from ..exc import NotFoundError
 from .base import (
     kls_get_by_id,

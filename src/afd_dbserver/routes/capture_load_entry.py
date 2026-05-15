@@ -8,7 +8,7 @@ from fastapi import (
 )
 from sqlmodel import Session as DBSession
 from ..models import get_session
-from ..models import (
+from ..models.capture_load import (
     CaptureLoadEntry,
     CaptureLoadEntryVersion,
     CaptureLoadEntryVersionAddOrUpdate
@@ -87,7 +87,7 @@ def get_version_by_name(id: uuid.UUID, name: str, dbsession: DBSession = Depends
     cple_ = kls_get_by_id(CaptureLoadEntry, id, dbsession)
     return cple_.get_version_by_name(dbsession, name)
 
-@capture_load_entry_version_router("", response_model=CaptureLoadEntryVersion)
+@capture_load_entry_version_router.put("", response_model=CaptureLoadEntryVersion)
 def update_version(id: uuid.UUID, payload: CaptureLoadEntryVersion, dbsession: DBSession = Depends(get_session)):
     """ PUT to /capture_load_entry_versions/{id}
     """

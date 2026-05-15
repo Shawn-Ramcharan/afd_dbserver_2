@@ -15,8 +15,8 @@ from .base import (
     kls_create
 )
 
-router = APIRouter(prefix="/locations", tags=["locations"])
-attr_router = APIRouter(prefix="/locations/{id}/{attr}", tags=["locations"])
+router = APIRouter(prefix="/locations", tags=["Locations"])
+attr_router = APIRouter(prefix="/locations/{id}/{attr}", tags=["Locations"])
 
 @router.get("", response_model=list[Location])
 def get_all(dbsession: DBSession = Depends(get_session)):
