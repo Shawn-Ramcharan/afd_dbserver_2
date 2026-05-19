@@ -13,7 +13,7 @@ from afd_dbserver.routes import (
     solver_setup,
     device,
     volume,
-    # timecode_range,
+    timecode_range,
     capture_load,
     capture_load_entry,
     # take_select,
@@ -56,6 +56,7 @@ app.include_router(capture_load_entry.capture_load_router)
 app.include_router(capture_load_entry.versions_router)
 app.include_router(capture_load_entry.capture_load_entry_version_router)
 app.include_router(capture_load_entry.router)
+app.include_router(timecode_range.router)
 
 # Attr Router
 # NOTE: Wiil need to add them last because
@@ -75,6 +76,7 @@ app.include_router(device.attr_router)
 app.include_router(volume.attr_router)
 app.include_router(capture_load.attr_router)
 app.include_router(capture_load_entry.attr_router)
+app.include_router(timecode_range.attr_router)
 
 # @app.get("/projects", response_model=list[Any])
 # def home_page():
