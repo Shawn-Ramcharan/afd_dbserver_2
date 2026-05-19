@@ -3,8 +3,9 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy.exc import NoResultFound, IntegrityError
 from sqlmodel import Session as DBSession
-from sqlmodel import (SQLModel, Field, JSON, select, delete, desc)
+from sqlmodel import SQLModel, Field, JSON, select, delete, desc
 from ..exc import NotFoundError, BadRequestError
+
 
 def utcnow():
     """Returns the current time in UTC."""
@@ -27,6 +28,7 @@ class IdMixin(SQLModel):
             return dbsession.exec(select(cls).where(cls.id == id_)).one()
         except NoResultFound:
             raise NotFoundError(cls, id_=id_)
+
 
 class BaseMixin(IdMixin):
     """BaseMixin"""
@@ -70,11 +72,18 @@ class BaseMixin(IdMixin):
         dbsession.refresh(model)
         return model
 
-    def get_attr_relationship(self, relationship: str, limit_: Optional[int] = None, offset_: Optional[int] = None):
+    def get_attr_relationship(
+        self,
+        relationship: str,
+        limit_: Optional[int] = None,
+        offset_: Optional[int] = None,
+    ):
         try:
             match (limit_, offset_):
                 case (int(), int()):
-                    attr_relationship = getattr(self, relationship, None).offset(offset_).limit(limit_)
+                    attr_relationship = (
+                        getattr(self, relationship, None).offset(offset_).limit(limit_)
+                    )
                 case (int(), None):
                     attr_relationship = getattr(self, relationship, None).limit(limit_)
                 case (None, int()):
@@ -82,10 +91,14 @@ class BaseMixin(IdMixin):
                 case _:
                     attr_relationship = getattr(self, relationship, None)
             if attr_relationship is None:
-                raise BadRequestError(f"{self.__class__.__name__} does not have relationship {relationship}")
+                raise BadRequestError(
+                    f"{self.__class__.__name__} does not have relationship {relationship}"
+                )
             return attr_relationship
         except AttributeError:
-            raise BadRequestError(f"{self.__class__.__name__} does not have relationship {relationship}")
+            raise BadRequestError(
+                f"{self.__class__.__name__} does not have relationship {relationship}"
+            )
 
     def set_creation_stamp(self, user_id: str):
         # track the creating user
@@ -107,11 +120,12 @@ class AttrMixin(SQLModel):
 
     def merge_attrs(self, attrs: dict[str, Any]):
         if self.attrs is None:
-            self.attrs = {"test" : "test"}
+            self.attrs = {"test": "test"}
         self.attrs.update(attrs)
         for key, value in self.attrs.items():
             if value is None:
                 self.attrs.pop(key)
+
 
 class ProjectScopedDataMixin(object):
 
