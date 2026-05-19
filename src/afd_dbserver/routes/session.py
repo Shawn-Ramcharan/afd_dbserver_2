@@ -99,6 +99,8 @@ def update(id: uuid.UUID, session_data: Session, dbsession: DBSession = Depends(
 def get_attrs(
     id: uuid.UUID,
     attr: str,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
     type: Optional[ETakeType] = None,
     dbsession: DBSession = Depends(get_session)
 ):
@@ -110,10 +112,10 @@ def get_attrs(
     if attr == "takes":
         session = kls_get_by_id(Session, id, dbsession)
         try:
-            return session.get_takes(dbsession, type)
+            return session.get_takes(dbsession, type_=type, limit_=limit, offset_=offset)
         except BadRequestError as err:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(err)
             )
-    return kls_get_attrs(Session, id, attr, dbsession)
+    return kls_get_attrs(Session, id, attr, dbsession, limit_=limit, offset_=offset)

@@ -76,5 +76,5 @@ def get_by_slate(project_id: uuid.UUID, slate: list[str], dbsession: DBSession =
     return Take.get_by_slates(dbsession, project_id, slate)
 
 @attr_router.get("", response_model=Any)
-def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
-    return kls_get_attrs(Take, id, attr, dbsession)
+def get_attrs(id: uuid.UUID, attr: str, limit: Optional[int] = None, offset: Optional[int] = None, dbsession: DBSession = Depends(get_session)):
+    return kls_get_attrs(Take, id, attr, dbsession, limit_=limit, offset_=offset)

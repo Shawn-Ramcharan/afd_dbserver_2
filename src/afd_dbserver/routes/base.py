@@ -103,7 +103,7 @@ def kls_get_attrs[M: BaseMixin](
 ) -> Any:
     try:
         db_object = klass_.get_by_id(id, dbsession)
-        return db_object.get_attr_relationship(attr)#limit_=limit_, offset_=offset_)
+        return db_object.get_attr_relationship(attr, limit_=limit_, offset_=offset_)
     except BadRequestError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

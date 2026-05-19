@@ -41,17 +41,26 @@ class Session(
     location: Location = Relationship(back_populates="sessions")
     volumes: list["Volume"] = Relationship(
         back_populates="session",
-        # order_by="Volume.code.desc()"
-    )  # order_by=desc(text("volume_t.code")))
+        sa_relationship_kwargs={
+            "order_by": "Volume.code.desc()",
+            "lazy": "dynamic"
+        }
+    )
     takes: list["Take"] = Relationship(
         back_populates="session",
-        # order_by="Take.creation_date.desc()"
-    )  # , order_by=desc(text("take_t.creation_date")))
+        sa_relationship_kwargs={
+            "order_by": "Take.creation_date.desc()",
+            "lazy": "dynamic"
+        }
+    )
     notes: list["Note"] = Relationship(
         link_model=NoteAssoc,
         back_populates="session",
-        # order_by="Note.last_modified.desc()"
-    )  # , order_by=desc(text("note_t.last_modified")) )
+        sa_relationship_kwargs={
+            "order_by": "Note.last_modified.desc()",
+            "lazy": "dynamic"
+        }
+    )
     resources: list[Resource] = Relationship(
         link_model=ResourceAssoc,
         back_populates="session",
@@ -131,10 +140,14 @@ class Session(
         location_ids = dbsession.exec(stmt).all()
         return [Location.get_by_id(loc_id, dbsession) for loc_id in location_ids]
 
-    def get_takes(self, dbsession: DBSession, type_: Optional[ETakeType] = None):
+    def get_takes(self, dbsession: DBSession, type_: Optional[ETakeType] = None, limit_: Optional[int] = None, offset_: Optional[int] = None):
         stmt = select(Take).where(Take.session_id==self.id)
         if type_ is not None:
             if type_.value not in ETakeType.__members__:
                 raise InvalidEnumValueError(type_, ETakeType)
             stmt = stmt.where(Take.type_ == type_)
+        if offset_ is not None:
+            stmt = stmt.offset(offset_)
+        if limit_ is not None:
+            stmt = stmt.limit(limit_)
         return dbsession.exec(stmt.order_by(Take.creation_date.desc())).unique().all()

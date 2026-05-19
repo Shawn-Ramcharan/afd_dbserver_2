@@ -86,6 +86,7 @@ class Take(
     take_selects: list["TakeSelect"] = Relationship(
         back_populates="take",
         sa_relationship_kwargs={
+            "lazy": "dynamic",
             "order_by": "TakeSelect.creation_date.desc()"
         }
     )

@@ -2,6 +2,8 @@ from typing import Any, Optional, Self
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.exc import NoResultFound, IntegrityError
+from sqlalchemy.orm.collections import InstrumentedList
+from sqlalchemy.orm.query import Query
 from sqlmodel import Session as DBSession
 from sqlmodel import SQLModel, Field, JSON, select, delete, desc
 from ..exc import NotFoundError, BadRequestError
@@ -79,24 +81,25 @@ class BaseMixin(IdMixin):
         offset_: Optional[int] = None,
     ):
         try:
-            # match (limit_, offset_):
-            #     case (int(), int()):
-            #         attr_relationship = getattr(self, relationship, None).offset(offset_).limit(limit_)
-            #     case (int(), None):
-            #         attr_relationship = getattr(self, relationship, None).limit(limit_)
-            #     case (None, int()):
-            #         attr_relationship = getattr(self, relationship, None).offset(offset_)
-            #     case _:
-            #         attr_relationship = getattr(self, relationship, None)
-            attr_relationship = getattr(self, relationship, None)
-            if attr_relationship is None:
-                raise BadRequestError(
-                    f"{self.__class__.__name__} does not have relationship {relationship}"
-                )
-            return attr_relationship
-        except AttributeError:
+            match (limit_, offset_):
+                case (int(), int()):
+                    return getattr(self, relationship, None).offset(offset_).limit(limit_).all()
+                case (int(), None):
+                    return getattr(self, relationship, None).limit(limit_).all()
+                case (None, int()):
+                    return getattr(self, relationship, None).offset(offset_).all()
+                case _:
+                    attr_relationship = getattr(self, relationship, None)
+                    if isinstance(attr_relationship, Query):
+                        return attr_relationship.all()
+                    if attr_relationship is None:
+                        raise BadRequestError(
+                            f"{self.__class__.__name__} does not have relationship {relationship}"
+                        )
+                    return attr_relationship
+        except AttributeError as err:
             raise BadRequestError(
-                f"{self.__class__.__name__} does not have relationship {relationship}"
+                f"Something went wrong when trying to access {relationship} for {self.__class__.__name__} limit={limit_}, offset={offset_}"
             )
 
     def set_creation_stamp(self, user_id: str):
