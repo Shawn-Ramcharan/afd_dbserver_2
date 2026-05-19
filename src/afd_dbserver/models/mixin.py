@@ -25,7 +25,7 @@ class IdMixin(SQLModel):
     @classmethod
     def get_by_id(cls, id_: uuid.UUID, dbsession: DBSession):
         try:
-            return dbsession.exec(select(cls).where(cls.id == id_)).one()
+            return dbsession.exec(select(cls).where(cls.id == id_)).unique().one()
         except NoResultFound:
             raise NotFoundError(cls, id_=id_)
 
@@ -79,15 +79,16 @@ class BaseMixin(IdMixin):
         offset_: Optional[int] = None,
     ):
         try:
-            match (limit_, offset_):
-                case (int(), int()):
-                    attr_relationship = getattr(self, relationship, None).offset(offset_).limit(limit_)
-                case (int(), None):
-                    attr_relationship = getattr(self, relationship, None).limit(limit_)
-                case (None, int()):
-                    attr_relationship = getattr(self, relationship, None).offset(offset_)
-                case _:
-                    attr_relationship = getattr(self, relationship, None)
+            # match (limit_, offset_):
+            #     case (int(), int()):
+            #         attr_relationship = getattr(self, relationship, None).offset(offset_).limit(limit_)
+            #     case (int(), None):
+            #         attr_relationship = getattr(self, relationship, None).limit(limit_)
+            #     case (None, int()):
+            #         attr_relationship = getattr(self, relationship, None).offset(offset_)
+            #     case _:
+            #         attr_relationship = getattr(self, relationship, None)
+            attr_relationship = getattr(self, relationship, None)
             if attr_relationship is None:
                 raise BadRequestError(
                     f"{self.__class__.__name__} does not have relationship {relationship}"
