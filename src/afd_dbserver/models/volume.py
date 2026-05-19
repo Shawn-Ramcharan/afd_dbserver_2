@@ -33,7 +33,7 @@ class Volume(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLMod
     capture_loads: list["CaptureLoad"] = Relationship(
         back_populates="volume",
         sa_relationship_kwargs={
-            "order_by": "capture_load_t.creation_date.desc()"
+            "order_by": "CaptureLoad.creation_date.desc()"
         }
     )
     resources: list["Resource"] = Relationship(
