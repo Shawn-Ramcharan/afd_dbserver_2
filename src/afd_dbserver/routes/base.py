@@ -97,11 +97,13 @@ def kls_get_attrs[M: BaseMixin](
     klass_: M,
     id: uuid.UUID,
     attr: str,
-    dbsession: DBSession
+    dbsession: DBSession,
+    limit_: Optional[int] = None,
+    offset_: Optional[int] = None
 ) -> Any:
     try:
         db_object = klass_.get_by_id(id, dbsession)
-        return db_object.get_attr_relationship(attr)
+        return db_object.get_attr_relationship(attr, limit_=limit_, offset_=offset_)
     except BadRequestError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -24,11 +24,10 @@ attr_router = APIRouter(
 )
 
 @router.post("", response_model=TimecodeRange)
-def create(volume_id: uuid.UUID, payload: TimecodeRange, dbsession: DBSession = Depends(get_session)):
-    """ POST to /volumes/{volume_id}/timecode_range
+def create(payload: TimecodeRange, dbsession: DBSession = Depends(get_session)):
+    """ POST to /timecode_ranges/
     """
     user_id = "unknown"
-    payload.volume_id = volume_id
     return kls_create(TimecodeRange, user_id, payload, dbsession)
 
 @router.get("", response_model=TimecodeRange)

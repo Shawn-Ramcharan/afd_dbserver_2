@@ -16,8 +16,8 @@ from afd_dbserver.routes import (
     timecode_range,
     capture_load,
     capture_load_entry,
-    # take_select,
-    # take_select_list,
+    take_select,
+    take_select_list,
     # resource,
     # version,
     # item,
@@ -57,6 +57,10 @@ app.include_router(capture_load_entry.versions_router)
 app.include_router(capture_load_entry.capture_load_entry_version_router)
 app.include_router(capture_load_entry.router)
 app.include_router(timecode_range.router)
+app.include_router(take_select.take_router)
+app.include_router(take_select.router)
+app.include_router(take_select_list.project_router)
+app.include_router(take_select_list.router)
 
 # Attr Router
 # NOTE: Wiil need to add them last because
@@ -77,6 +81,8 @@ app.include_router(volume.attr_router)
 app.include_router(capture_load.attr_router)
 app.include_router(capture_load_entry.attr_router)
 app.include_router(timecode_range.attr_router)
+app.include_router(take_select.attr_router)
+app.include_router(take_select_list.attr_router)
 
 # @app.get("/projects", response_model=list[Any])
 # def home_page():
