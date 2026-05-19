@@ -27,7 +27,7 @@ router = APIRouter(
     prefix="/takes/{id}", tags=["Takes"]
 )
 attr_router = APIRouter(
-    prefix="/takes/{id}/{attrs}", tags=["Takes"]
+    prefix="/takes/{id}/{attr}", tags=["Takes"]
 )
 
 @project_router.get("", response_model=list[Take])

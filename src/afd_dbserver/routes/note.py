@@ -21,23 +21,23 @@ from . import (
 router = APIRouter(prefix="/notes/{id}", tags=["Notes"])
 attr_router = APIRouter(prefix="/notes/{id}/{attr}", tags=["Notes"])
 
-@take.attr_router.post("", response_model=Note, tags=["Notes"])
-def create_take_note(id: uuid.UUID, attr: str, payload: Note, dbsession: DBSession = Depends(get_session)):
-    user_id = "brian"
-    if attr == "notes":
-        payload.take_id = id
-        payload.session_id = None
-        payload.take_select_id = None
-    return kls_create(Note, user_id, payload, dbsession)
-
-@session.attr_router.post("", response_model=Note, tags=["Notes"])
-def create_session_note(id: uuid.UUID, attr: str, payload: Note, dbsession: DBSession = Depends(get_session)):
-    user_id = "brian"
-    if attr == "notes":
-        payload.take_id = None
-        payload.session_id = id
-        payload.take_select_id = None
-    return kls_create(Note, user_id, payload, dbsession)
+# @take.attr_router.post("", response_model=Note, tags=["Notes"])
+# def create_take_note(id: uuid.UUID, attr: str, payload: Note, dbsession: DBSession = Depends(get_session)):
+#     user_id = "brian"
+#     if attr == "notes":
+#         payload.take_id = id
+#         payload.session_id = None
+#         payload.take_select_id = None
+#     return kls_create(Note, user_id, payload, dbsession)
+#
+# @session.attr_router.post("", response_model=Note, tags=["Notes"])
+# def create_session_note(id: uuid.UUID, attr: str, payload: Note, dbsession: DBSession = Depends(get_session)):
+#     user_id = "brian"
+#     if attr == "notes":
+#         payload.take_id = None
+#         payload.session_id = id
+#         payload.take_select_id = None
+#     return kls_create(Note, user_id, payload, dbsession)
 
 @router.get("", response_model=Note)
 def get_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):

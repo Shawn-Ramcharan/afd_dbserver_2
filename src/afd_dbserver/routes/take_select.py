@@ -6,7 +6,7 @@ from fastapi import (
 )
 from sqlmodel import Session as DBSession
 from ..models import get_session
-from ..models.take_selects import TakeSelect
+from ..models.take_select import TakeSelect
 from .base import (
     kls_get_by_id,
     kls_update,

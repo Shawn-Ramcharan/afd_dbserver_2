@@ -81,9 +81,7 @@ class BaseMixin(IdMixin):
         try:
             match (limit_, offset_):
                 case (int(), int()):
-                    attr_relationship = (
-                        getattr(self, relationship, None).offset(offset_).limit(limit_)
-                    )
+                    attr_relationship = getattr(self, relationship, None).offset(offset_).limit(limit_)
                 case (int(), None):
                     attr_relationship = getattr(self, relationship, None).limit(limit_)
                 case (None, int()):

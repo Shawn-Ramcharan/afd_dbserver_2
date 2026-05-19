@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Optional, Any
 from fastapi import (
     Depends,
     APIRouter,
