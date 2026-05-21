@@ -9,12 +9,15 @@ def kls_get_owner_by_id[M: BaseMixin](
     id_: uuid.UUID,
     owner_kls_list: list[M],
     dbsession: DBSession
-) -> M:
+) -> dict:
     owner_kls_names = ""
     for owner_kls in owner_kls_list:
         try:
             model = owner_kls.get_by_id(id_, dbsession)
-            return model
+            return {
+                "__class__": owner_kls.__name__,
+                "data": model
+            }
         except NotFoundError:
             owner_kls_names += f"{owner_kls_names.__name__}, "
     owner_kls_names = owner_kls_names[:-2]
@@ -28,9 +31,12 @@ def kls_create[M: BaseMixin](
     user_id: str,
     payload: M,
     dbsession: DBSession
-) -> M:
+) -> dict:
     try:
-        return klass_.create(user_id, payload, dbsession)
+        return {
+            "__class__": klass_.__name__,
+            "data": klass_.create(user_id, payload, dbsession)
+        }
     except BadRequestError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -41,9 +47,12 @@ def kls_get_by_id[M: BaseMixin](
     klass_: M,
     id: uuid.UUID,
     dbsession: DBSession
-) -> M:
+) -> dict:
     try:
-        return klass_.get_by_id(id, dbsession)
+        return {
+            "__class__": klass_.__name__,
+            "data": klass_.get_by_id(id, dbsession)
+        }
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -55,9 +64,12 @@ def kls_update[M: BaseMixin](
     id: uuid.UUID,
     payload: M,
     dbsession: DBSession
-) -> M:
+) -> dict:
     try:
-        return klass_.update(user_id, id, payload, dbsession)
+        return {
+            "__class__": klass_.__name__,
+            "data": klass_.update(user_id, id, payload, dbsession)
+        }
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -69,11 +81,14 @@ def kls_get_by_code[M: BaseMixin](
     code: str,
     dbsession: DBSession,
     parent_id: Optional[uuid.UUID] = None
-) -> M:
+) -> dict:
     try:
         if parent_id:
             klass_.get_by_code(dbsession, parent_id, code)
-        return klass_.get_by_code(dbsession, code)
+        return {
+            "__class__": klass_.__name__,
+            "data": klass_.get_by_code(dbsession, code)
+        }
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -84,9 +99,12 @@ def kls_get_by_name[M: BaseMixin](
     klass_: M,
     name: str,
     dbsession: DBSession
-) -> M:
+) -> dict:
     try:
-        return klass_.get_by_name(dbsession, name)
+        return {
+            "__class__": klass_.__name__,
+            "data": klass_.get_by_name(dbsession, name)
+        }
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -103,7 +121,11 @@ def kls_get_attrs[M: BaseMixin](
 ) -> Any:
     try:
         db_object = klass_.get_by_id(id, dbsession)
-        return db_object.get_attr_relationship(attr, limit_=limit_, offset_=offset_)
+        relationship_kls, relationship_data = db_object.get_attr_relationship(attr, limit_=limit_, offset_=offset_)
+        return {
+            "__class__": relationship_kls,
+            "data": relationship_data
+        }
     except BadRequestError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

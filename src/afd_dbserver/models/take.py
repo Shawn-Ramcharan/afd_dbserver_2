@@ -129,7 +129,7 @@ class Take(
                 raise InvalidEnumValueError(type_, ETakeType)
             stmt = stmt.where(cls.type_ == type_)
         stmt.order_by(cls.creation_date.desc())
-        return dbsession.exec(stmt).all()
+        return dbsession.exec(stmt).unique().all()
 
     @classmethod
     def get_by_name(

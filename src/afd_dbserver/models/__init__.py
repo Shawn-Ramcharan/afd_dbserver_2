@@ -44,3 +44,7 @@ metadata.create_all(engine)
 def get_session():
     with DbSession(engine) as dbsession:
         yield dbsession
+
+from .mixin import get_object_meta
+get_object_meta()
+

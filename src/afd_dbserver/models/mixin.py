@@ -1,9 +1,10 @@
-from typing import Any, Optional, Self
+from typing import Any, Optional, Self, ClassVar
 import uuid
-from datetime import datetime, timezone
+import enum
+from datetime import datetime, date, timezone
 from sqlalchemy.exc import NoResultFound, IntegrityError
-from sqlalchemy.orm.collections import InstrumentedList
 from sqlalchemy.orm.query import Query
+from sqlalchemy.orm.base import Mapped
 from sqlmodel import Session as DBSession
 from sqlmodel import SQLModel, Field, JSON, select, delete, desc
 from ..exc import NotFoundError, BadRequestError
@@ -31,6 +32,8 @@ class IdMixin(SQLModel):
         except NoResultFound:
             raise NotFoundError(cls, id_=id_)
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__} : {self.id}>"
 
 class BaseMixin(IdMixin):
     """BaseMixin"""
@@ -81,22 +84,35 @@ class BaseMixin(IdMixin):
         offset_: Optional[int] = None,
     ):
         try:
+            relationship_kls  = getattr(self.__class__, relationship, None).mapper.class_.__name__
             match (limit_, offset_):
                 case (int(), int()):
-                    return getattr(self, relationship, None).offset(offset_).limit(limit_).all()
+                    return (
+                        relationship_kls,
+                        getattr(self, relationship, None).offset(offset_).limit(limit_).all()
+                    )
                 case (int(), None):
-                    return getattr(self, relationship, None).limit(limit_).all()
+                    return (
+                        relationship_kls,
+                        getattr(self, relationship, None).limit(limit_).all()
+                    )
                 case (None, int()):
-                    return getattr(self, relationship, None).offset(offset_).all()
+                    return (
+                        relationship_kls,
+                        getattr(self, relationship, None).offset(offset_).all()
+                    )
                 case _:
                     attr_relationship = getattr(self, relationship, None)
                     if isinstance(attr_relationship, Query):
-                        return attr_relationship.all()
+                        return (
+                            relationship_kls,
+                            attr_relationship.all()
+                        )
                     if attr_relationship is None:
                         raise BadRequestError(
                             f"{self.__class__.__name__} does not have relationship {relationship}"
                         )
-                    return attr_relationship
+                    return (relationship_kls, attr_relationship)
         except AttributeError as err:
             raise BadRequestError(
                 f"Something went wrong when trying to access {relationship} for {self.__class__.__name__} limit={limit_}, offset={offset_}"
@@ -229,3 +245,108 @@ class ProjectScopedParentMixin(object):
         ).rowcount
         dbsession.expire_all()
         return rows_affected
+
+def all_subclasses(cls):
+    return set(cls.__subclasses__()).union([
+        s for c in cls.__subclasses__() for s in all_subclasses(c)
+    ])
+
+def all_enum_classes():
+
+    class_enum_types = []
+    for enum_ in all_subclasses(enum.Enum):
+        if not enum_.__module__.startswith("afd_dbserver.models"):
+            continue
+        class_enum_types.append(enum_)
+    return class_enum_types
+
+def get_object_meta():
+    TYPES_ = {
+        str: "string",
+        int: "int",
+        float: "float",
+        bool: "bool",
+        uuid.UUID: "uuid",
+        list: "list",
+        dict: "dict",
+        datetime: "datetime",
+        date: "date",
+        Optional[str]: "string",
+        Optional[int]: "int",
+        Optional[float]: "float",
+        Optional[bool]: "bool",
+        Optional[uuid.UUID]: "uuid",
+        Optional[list]: "list",
+        Optional[dict]: "dict",
+        Optional[datetime]: "datetime",
+        Optional[date]: "date",
+        Optional[list[str]]: "list",
+    }
+    ENUMS_TYPES_ = {enum_: enum_ for enum_ in all_enum_classes()}
+    results = {}
+    for kls in all_subclasses(IdMixin):
+        kls_name = kls.__name__
+        # Ignore BaseMixin
+        if kls_name == "BaseMixin":
+            continue
+        # we handle these as a special case.
+        # This is handled at the end of.
+        if kls_name in ["ItemAssoc", "Item"]:
+            continue
+        if kls_name not in results.keys():
+            results.update({
+                kls_name: {"attributes": {}, "relationships": {}
+            }})
+        # Iter through the class attrs to get name and type.
+        for attr_name, attr_type_ in kls.__annotations__.items():
+            if attr_type_ == ClassVar:
+                continue
+            attr_ = getattr(kls, attr_name, None)
+            if attr_ is None:
+                continue
+            # Add Enums of the model. This get also the
+            # valid types for the enum.
+            try:
+                enum_ = ENUMS_TYPES_[attr_type_]
+                results[kls_name]["attributes"].update({
+                    attr_name: {
+                        "type": "enum",
+                        "valid_values": [str(type_) for type_ in enum_.__members__]
+                    }
+                })
+                continue
+            except KeyError:
+                pass
+            # Add Attributes of the model and its type_
+            try:
+                type_ = TYPES_[attr_type_]
+                manditory_ = (attr_.nullable == False)
+                results[kls_name]["attributes"].update({attr_name: {
+                    "type": type_,
+                    "mandatory": manditory_
+                }})
+            except KeyError:
+                # Add Relationship of the model. This gets
+                # the class for the relationship
+                if isinstance(attr_, Mapped):
+                    results[kls_name]["relationships"].update({
+                        attr_name: {"target_class": attr_.mapper.class_.__name__}
+                    })
+    # Add the Items Meta Data
+    results.update({
+        "Item": {
+            "attributes": {
+                "name": {"type": "string", "mandatory": False},
+                "location": {"type": "string", "mandatory": False},
+                "attrs": {"type": "dict", "mandatory": False},
+                "id": {"type": "uuid", "mandatory": True},
+                "created_by": {"type": "string", "mandatory": True},
+                "creation_date": {"type": "datetime", "mandatory": True},
+                "modified_by": {"type": "string", "mandatory": True},
+                "last_modified": {"type": "datetime", "mandatory": True},
+            },
+            "relationships": {"version": {"target_class": "Version"}},
+        }
+    })
+    results["Version"]["relationships"]["items"] = {"target_class": "Item"}
+    return results

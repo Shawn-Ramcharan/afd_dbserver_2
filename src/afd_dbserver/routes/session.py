@@ -39,7 +39,7 @@ def create(project_id: uuid.UUID, payload: Session, dbsession: DBSession = Depen
     payload.project_id = project_id
     return kls_create(Session, user_id, payload, dbsession)
 
-@project_router.get("", response_model=list[Session | date])
+@project_router.get("")#, response_model=list[Session | date])
 def get_data(
     project_id: uuid.UUID,
     query: Optional[str] = None,
@@ -57,18 +57,28 @@ def get_data(
             detail=f"Invalid Request cant query dates and name"
         )
     if query == "dates":
-        return Session.get_all_dates(
+        dates_ = Session.get_all_dates(
             dbsession,
             project_id,
             location_id
         )
+        return {"data": dates_}
     if name:
-        return Session.get_by_name(dbsession, project_id, name, location_id)
+        sessions_ = Session.get_by_name(
+            dbsession,
+            project_id,
+            name,
+            location_id
+        )
+        return {
+            "__class__": Session.__name__,
+            "data": sessions_
+        }
 
 # NOTE: Just put `/all` for now but would
 # like to change this to the original path
 # designe.
-@project_router.get("/all", response_model=list[Session])
+@project_router.get("/all", )#, response_model=list[Session])
 def get_all(
     project_id: uuid.UUID,
     location_ids: Optional[list[uuid.UUID]] = None,
@@ -79,12 +89,16 @@ def get_all(
     """
     GET from /projects/{project_id}/sessions?[location_id=][&location_id=...][&shoot_date=][&shoot_date=...][&query=dates]
     """
-    return Session.get_all(
+    sessions_ = Session.get_all(
         dbsession,
         project_id,
         location_ids=location_ids,
         shoot_dates=shoot_dates
     )
+    return {
+        "__class__": Session.__name__,
+        "data": sessions_
+    }
 
 @router.get("", response_model=Session)
 def get_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
