@@ -5,11 +5,12 @@ from fastapi import (
     Depends,
     APIRouter,
     HTTPException,
+    Request,
     status
 )
 from sqlmodel import Session as DBSession
 
-from afd_dbserver.models.take import ETakeType
+from afd_dbserver.models.take import ETakeType, Take
 from ..models import get_session
 from ..models.session import Session
 from ..exc import BadRequestError
@@ -33,28 +34,34 @@ attr_router = APIRouter(
     tags=["Sessions"]
 )
 
-@project_router.post("", response_model=Session)
+@project_router.post("")#, response_model=Session)
 def create(project_id: uuid.UUID, payload: Session, dbsession: DBSession = Depends(get_session)):
     user_id = "unknown"
     payload.project_id = project_id
     return kls_create(Session, user_id, payload, dbsession)
 
 @project_router.get("")#, response_model=list[Session | date])
-def get_data(
+def get_sessions(
     project_id: uuid.UUID,
+    request: Request,
     query: Optional[str] = None,
     name: Optional[str] = None,
     location_id: Optional[uuid.UUID] = None,
+    location_ids: Optional[list[uuid.UUID]] = None,
+    shoot_dates: Optional[list[date]] = None,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
     dbsession: DBSession = Depends(get_session)
 ):
     """
     GET from /projects/{project_id}/sessions?&query=dates[&location_id=]
     GET from /projects/{project_id}/sessions?name=&[location_id=]
+    GET from /projects/{project_id}/sessions?[location_id=][&location_id=...][&shoot_date=][&shoot_date=...][&query=dates]
     """
-    if name and query:
+    if name and query and (location_ids or shoot_dates or limit or offset):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid Request cant query dates and name"
+            detail=f"This is an Invalid Request {request.url}"
         )
     if query == "dates":
         dates_ = Session.get_all_dates(
@@ -74,42 +81,29 @@ def get_data(
             "__class__": Session.__name__,
             "data": sessions_
         }
-
-# NOTE: Just put `/all` for now but would
-# like to change this to the original path
-# designe.
-@project_router.get("/all", )#, response_model=list[Session])
-def get_all(
-    project_id: uuid.UUID,
-    location_ids: Optional[list[uuid.UUID]] = None,
-    shoot_dates: Optional[list[date]] = None,
-    dbsession: DBSession = Depends(get_session)
-):
-
-    """
-    GET from /projects/{project_id}/sessions?[location_id=][&location_id=...][&shoot_date=][&shoot_date=...][&query=dates]
-    """
     sessions_ = Session.get_all(
         dbsession,
         project_id,
         location_ids=location_ids,
-        shoot_dates=shoot_dates
+        shoot_dates=shoot_dates,
+        limit_=limit,
+        offset_=offset
     )
     return {
         "__class__": Session.__name__,
         "data": sessions_
     }
 
-@router.get("", response_model=Session)
+@router.get("")#, response_model=Session)
 def get_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
     return kls_get_by_id(Session, id, dbsession)
 
-@router.put("", response_model=Session)
+@router.put("")#, response_model=Session)
 def update(id: uuid.UUID, session_data: Session, dbsession: DBSession = Depends(get_session)):
     user_id = "shawn"
     return kls_update(Session, user_id, id, session_data, dbsession)
 
-@attr_router.get("", response_model=Any)
+@attr_router.get("")#, response_model=Any)
 def get_attrs(
     id: uuid.UUID,
     attr: str,
@@ -124,9 +118,18 @@ def get_attrs(
             detail=f"cannot get types for {attr}"
         )
     if attr == "takes":
-        session = kls_get_by_id(Session, id, dbsession)
         try:
-            return session.get_takes(dbsession, type_=type, limit_=limit, offset_=offset)
+            takes_ = Take.get_all(
+                dbsession,
+                session_id=id,
+                type_=type,
+                limit_=limit,
+                offset_=offset
+            )
+            return {
+                "__class__": Take.__name__,
+                "data": takes_
+            }
         except BadRequestError as err:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

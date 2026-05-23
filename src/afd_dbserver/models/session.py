@@ -92,6 +92,8 @@ class Session(
         project_id: uuid.UUID,
         location_ids: Optional[list[uuid.UUID]] = None,
         shoot_dates: Optional[list[date]] = None,
+        limit_: Optional[int] = None,
+        offset_: Optional[int] = None
     ):
         sessions = select(cls).where(cls.project_id == project_id)
         # optional Location filter
@@ -100,6 +102,10 @@ class Session(
         # optional date filter
         if shoot_dates is not None:
             sessions = sessions.where(cls.shoot_date.in_(shoot_dates))
+        if offset_:
+            sessions = sessions.offset(offset_)
+        if limit_:
+            sessions = sessions.limit(limit_)
         return dbsession.exec(sessions.order_by(cls.name)).all()
 
     @classmethod
@@ -139,15 +145,3 @@ class Session(
             cls.project_id == project_id)
         location_ids = dbsession.exec(stmt).all()
         return [Location.get_by_id(loc_id, dbsession) for loc_id in location_ids]
-
-    def get_takes(self, dbsession: DBSession, type_: Optional[ETakeType] = None, limit_: Optional[int] = None, offset_: Optional[int] = None):
-        stmt = select(Take).where(Take.session_id==self.id)
-        if type_ is not None:
-            if type_.value not in ETakeType.__members__:
-                raise InvalidEnumValueError(type_, ETakeType)
-            stmt = stmt.where(Take.type_ == type_)
-        if offset_ is not None:
-            stmt = stmt.offset(offset_)
-        if limit_ is not None:
-            stmt = stmt.limit(limit_)
-        return dbsession.exec(stmt.order_by(Take.creation_date.desc())).unique().all()
