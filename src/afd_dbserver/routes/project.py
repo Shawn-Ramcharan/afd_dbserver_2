@@ -4,6 +4,7 @@ from fastapi import (
     Depends,
     HTTPException,
     APIRouter,
+    Request,
     status
 )
 from sqlmodel import Session as DBSession
@@ -90,7 +91,19 @@ def get_next_take_from_slate(id: uuid.UUID, slate: str, dbsession: DBSession = D
         )
 
 @attr_router.get("")#, response_model=Any)
-def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
+def get_attrs(
+    id: uuid.UUID,
+    request: Request,
+    attr: str,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
+    dbsession: DBSession = Depends(get_session)
+):
     if attr == "slates":
+        if limit or offset:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot use limit or Offset in getting slates: {request.url}"
+            )
         return Take.get_all_slates(dbsession, id)
-    return kls_get_attrs(Project, id, attr, dbsession)
+    return kls_get_attrs(Project, id, attr, dbsession, limit_=limit, offset_=offset)
