@@ -114,11 +114,26 @@ class Take(
     def get_all(
         cls,
         dbsession: DBSession,
-        project_id: uuid.UUID,
+        project_id: Optional[uuid.UUID] = None,
+        session_id: Optional[uuid.UUID] = None,
         type_: Optional[ETakeType] = None,
-        omit_status: Optional[list[ETakeStatus]] = None
+        omit_status: Optional[list[ETakeStatus]] = None,
+        limit_: Optional[int] = None,
+        offset_: Optional[int] = None
     ):
-        stmt = select(cls).where(cls.project_id==project_id)
+        match (project_id, session_id):
+            case (uuid.UUID(), uuid.UUID()):
+                raise BadRequestError("cannot supply project_id and session_id. need on or other")
+            case (None, None):
+                raise BadRequestError("Need to supply a project_id or session_id")
+            case (uuid.UUID(), None):
+                stmt = select(cls).where(cls.project_id==project_id)
+            case (None, uuid.UUID()):
+                stmt = select(cls).where(cls.session_id==session_id)
+            case _:
+                # NOTE: Keeping this even though this will not be possible
+                raise BadRequestError(f"unhandled case {project_id=} and {session_id=}")
+        stmt = stmt.order_by(cls.creation_date.desc())
         if omit_status:
             for status_ in omit_status:
                 if status_.value not in ETakeStatus.__members__:
@@ -128,7 +143,10 @@ class Take(
             if type_ not in ETakeType.__members__:
                 raise InvalidEnumValueError(type_, ETakeType)
             stmt = stmt.where(cls.type_ == type_)
-        stmt.order_by(cls.creation_date.desc())
+        if offset_:
+            stmt = stmt.offset(offset_)
+        if limit_:
+            stmt = stmt.limit(limit_)
         return dbsession.exec(stmt).unique().all()
 
     @classmethod
