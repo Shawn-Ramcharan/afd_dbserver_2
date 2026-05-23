@@ -12,7 +12,7 @@ from .resource_mixin import ResourceMixin
 from ..exc import NotFoundError
 
 if TYPE_CHECKING:
-    from .take import Take
+    from .take import Take, ETakeType
     from .take_select import TakeSelect
     from .take_select_list import TakeSelectList
     from .virtual_asset import VirtualAsset
@@ -42,13 +42,20 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
     )
     takes: list["Take"] = Relationship(
         sa_relationship_kwargs={
-            "order_by": "Take.creation_date.desc()"
+            "order_by": "Take.creation_date.desc()",
+            "lazy": "dynamic"
         }
     )
-    take_selects: list["TakeSelect"] = Relationship()
+    take_selects: list["TakeSelect"] = Relationship(
+        sa_relationship_kwargs={
+            "order_by": "TakeSelect.creation_date.desc()",
+            "lazy": "dynamic"
+        }
+    )
     take_select_lists: list["TakeSelectList"] = Relationship(
         sa_relationship_kwargs={
-            "order_by": "TakeSelectList.last_modified.desc()"
+            "order_by": "TakeSelectList.last_modified.desc()",
+            "lazy": "dynamic"
         }
     )
     resources: list[Resource] = Relationship(
@@ -96,4 +103,3 @@ class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
             return dbsession.exec(select(cls).where(cls.code == code)).one()
         except NoResultFound:
             raise NotFoundError(cls, code=code)
-
