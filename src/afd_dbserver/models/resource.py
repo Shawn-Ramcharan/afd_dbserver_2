@@ -386,7 +386,7 @@ class Version(BaseMixin, SQLModel, table=True):
     #     LOG.debug("Deleting %s"%self)
     #     request.dbsession.delete(self)
 
-class VersionLink(BaseMixin, AttrMixin, ProjectScopedParentMixin, SQLModel, table=True):
+class VersionLink(BaseMixin, SQLModel, table=True):
     __tablename__ = "version_link_t"
     __table_args__ = (
         UniqueConstraint(
