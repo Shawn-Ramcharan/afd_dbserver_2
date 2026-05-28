@@ -7,7 +7,7 @@ from sqlmodel import (
     Relationship,
 )
 from sqlmodel import Session as DBSession
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .mixin import BaseMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .appliance import Appliance
@@ -15,7 +15,7 @@ from .resource import Resource, ResourceAssoc
 if TYPE_CHECKING:
     from .volume import Volume
 
-class Device(BaseMixin, AttrMixin, ProjectScopedDataMixin, ResourceMixin, SQLModel, table=True):
+class Device(BaseMixin, ResourceMixin, SQLModel, table=True):
     """An instance of a recording device. Unique to a Session."""
 
     __tablename__ = "device_t"

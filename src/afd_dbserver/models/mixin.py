@@ -48,6 +48,7 @@ class BaseMixin(IdMixin):
         default_factory=utcnow,
         nullable=False,
     )
+    attrs: Optional[dict] = Field(sa_type=JSON)
 
     @classmethod
     def create(cls, user_id: str, payload: Self, dbsession: DBSession):
@@ -130,12 +131,6 @@ class BaseMixin(IdMixin):
         self.modified_by = user_id
         self.last_modified = utcnow()
 
-
-class AttrMixin(SQLModel):
-    """Extra Attributes to add in database."""
-
-    attrs: Optional[dict] = Field(sa_type=JSON)
-
     def merge_attrs(self, attrs: dict[str, Any]):
         if self.attrs is None:
             self.attrs = {"test": "test"}
@@ -143,7 +138,6 @@ class AttrMixin(SQLModel):
         for key, value in self.attrs.items():
             if value is None:
                 self.attrs.pop(key)
-
 
 class ProjectScopedDataMixin(object):
 

@@ -9,7 +9,7 @@ from sqlalchemy import ARRAY, Text
 from sqlalchemy.orm.attributes import flag_modified
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, Column, select)
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .mixin import BaseMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .resource import Resource, ResourceAssoc
@@ -27,7 +27,7 @@ class EVirtualAssetType(enum.Enum):
     camera = "camera"
 
 
-class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class VirtualAsset(BaseMixin, SQLModel, table=True):
     """ """
 
     __tablename__ = "virtual_asset_t"
@@ -100,7 +100,7 @@ class VirtualAsset(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table
         )
         return dbsession.exec(stmt).all()
 
-class VirtualAssetRevision(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class VirtualAssetRevision(BaseMixin, ResourceMixin, SQLModel, table=True):
     """ """
 
     OFFICIAL: ClassVar = "official"

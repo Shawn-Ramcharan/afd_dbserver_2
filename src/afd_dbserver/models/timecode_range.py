@@ -5,7 +5,7 @@ from sqlalchemy import Enum as SqlaEnum
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, Column)
 from afd_timecode import Timecode
-from .mixin import BaseMixin, AttrMixin, ProjectScopedParentMixin
+from .mixin import BaseMixin
 from ..exc import NotFoundError, BadRequestError
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ class ETimecodeRangeType(enum.Enum):
     qc = "qc"
 
 class TimecodeRange(
-    BaseMixin, AttrMixin, ProjectScopedParentMixin, SQLModel, table=True
+    BaseMixin, SQLModel, table=True
 ):
     __tablename__ = "timecode_range_t"
     tc_in: str = Field(max_length=32, nullable=False, default="00:00:00:00")
@@ -37,8 +37,6 @@ class TimecodeRange(
     description: Optional[str] = Field()
     take_id: Optional[uuid.UUID] = Field(foreign_key="take_t.id", default=None)
     take: "Take" = Relationship(back_populates="timecode_ranges")
-    PROJECT_PARENT_CLS: ClassVar = "Take"
-    PROJECT_CLS_ATTR: ClassVar = "take_id"
 
     @classmethod
     def create(cls, user_id: str, payload: SQLModel, dbsession: DBSession):

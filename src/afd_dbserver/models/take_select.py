@@ -6,7 +6,7 @@ from sqlalchemy.schema import UniqueConstraint
 from datetime import datetime, date
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, delete, select)
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
+from .mixin import BaseMixin, utcnow
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .note import Note, NoteAssoc
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .capture_load import CaptureLoad
     from .take import Take
 
-class TakeSelect(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class TakeSelect(BaseMixin, ResourceMixin, SQLModel, table=True):
     """ 
     """
 

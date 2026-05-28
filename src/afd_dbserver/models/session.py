@@ -4,7 +4,7 @@ from sqlalchemy.schema import UniqueConstraint
 from datetime import date
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, distinct, select)
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin, utcnow
+from .mixin import BaseMixin, utcnow
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .location import Location
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from .volume import Volume
 
 class Session(
-    BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True
+    BaseMixin, ResourceMixin, SQLModel, table=True
 ):
     """ """
 

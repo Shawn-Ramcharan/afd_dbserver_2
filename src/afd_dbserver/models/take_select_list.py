@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, ClassVar, Optional
 from sqlalchemy.schema import UniqueConstraint, PrimaryKeyConstraint
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, Column, select)
-from .mixin import IdMixin, BaseMixin, AttrMixin, ProjectScopedDataMixin, ProjectScopedAssocMixin
+from .mixin import IdMixin, BaseMixin
 from .project import Project
 
 if TYPE_CHECKING:
@@ -35,9 +35,6 @@ class TakeSelectListAssoc(IdMixin, SQLModel, table=True):
 
 class TakeSelectList(
     BaseMixin,
-    AttrMixin,
-    ProjectScopedDataMixin,
-    ProjectScopedAssocMixin,
     SQLModel,
     table=True,
 ):
@@ -81,8 +78,6 @@ class TakeSelectList(
         link_model=TakeSelectListAssoc,
         back_populates="take_select_lists",
     )
-    PROJECT_ASSOC_CLS: ClassVar = TakeSelectListAssoc
-    PROJECT_CLS_ATTR: ClassVar = "take_select_list_id"
 
     @classmethod
     def create(cls, user_id, payload: SQLModel, dbsession: DBSession):

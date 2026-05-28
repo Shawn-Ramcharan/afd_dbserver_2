@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional, Self
 from sqlalchemy.schema import UniqueConstraint
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship)
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .mixin import BaseMixin
 from .resource_mixin import ResourceMixin
 from .resource import Resource, ResourceAssoc
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from .capture_load import CaptureLoad
     from .device import Device
 
-class Volume(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class Volume(BaseMixin, ResourceMixin, SQLModel, table=True):
     """ """
 
     __tablename__ = "volume_t"

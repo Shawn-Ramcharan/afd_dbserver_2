@@ -1,17 +1,17 @@
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, select)
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .mixin import BaseMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .resource import Resource, ResourceAssoc
 from ..exc import NotFoundError
 from .virtual_asset import VirtualAssetRevision
 
-class Mapping(BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class Mapping(BaseMixin, ResourceMixin, SQLModel, table=True):
     """Describes a relationship between a source skeleton and a target
     skeleton, used for retargeting motion. Many-to-Many
     """

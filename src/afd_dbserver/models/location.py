@@ -7,11 +7,11 @@ from sqlmodel import (
     Relationship,
     select
 )
-from .mixin import BaseMixin, AttrMixin
+from .mixin import BaseMixin
 if TYPE_CHECKING:
     from .session import Session
 
-class Location(BaseMixin, AttrMixin, SQLModel, table=True):
+class Location(BaseMixin, SQLModel, table=True):
     """ A physical location where a shoot is happening.
     """
     __tablename__ = "location_t"

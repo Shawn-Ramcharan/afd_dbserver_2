@@ -9,10 +9,6 @@ from sqlmodel import (SQLModel, Column, Field, Relationship, distinct, select)
 from .mixin import (
     IdMixin,
     BaseMixin,
-    AttrMixin,
-    ProjectScopedDataMixin,
-    ProjectScopedAssocMixin,
-    ProjectScopedParentMixin,
     utcnow,
 )
 from ..exc import NotFoundError
@@ -67,9 +63,6 @@ class ResourceAssoc(IdMixin, SQLModel, table=True):
 
 class Resource(
     BaseMixin,
-    AttrMixin,
-    ProjectScopedDataMixin,
-    ProjectScopedAssocMixin,
     SQLModel,
     table=True,
 ):
@@ -117,8 +110,6 @@ class Resource(
         back_populates="resources",
         link_model=ResourceAssoc
     )
-
-    PROJECT_ASSOC_CLS: ClassVar = ResourceAssoc
 
     @classmethod
     def get_group_names(cls, dbsession: DBSession):
@@ -256,7 +247,7 @@ class Resource(
     #     LOG.debug("Deleting %s"%self)
     #     request.dbsession.delete(self)
 
-class Version(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class Version(BaseMixin, SQLModel, table=True):
 
     LATEST: ClassVar = "latest"
     OFFICIAL: ClassVar = "official"
@@ -426,7 +417,7 @@ class VersionLink(BaseMixin, AttrMixin, ProjectScopedParentMixin, SQLModel, tabl
     PROJECT_CLS_ATTR: ClassVar = "to_version_id"
 
 
-class ItemAssoc(IdMixin, ProjectScopedParentMixin, SQLModel, table=True):
+class ItemAssoc(IdMixin, SQLModel, table=True):
     __tablename__ = "item_assoc_t"
     __table_args__ = (
         UniqueConstraint("version_id", "name", name="version_name_item_uix"),
@@ -441,11 +432,8 @@ class ItemAssoc(IdMixin, ProjectScopedParentMixin, SQLModel, table=True):
             "lazy": "joined"
         }
     )
-    PROJECT_PARENT_CLS: ClassVar = Version
-    PROJECT_CLS_ATTR: ClassVar = "version_id"
 
-
-class Item(BaseMixin, AttrMixin, SQLModel, table=True):
+class Item(BaseMixin, SQLModel, table=True):
     __tablename__ = "item_t"
     location_hash: Optional[bytes] = Field(
         default=None, unique=True, index=True, nullable=False

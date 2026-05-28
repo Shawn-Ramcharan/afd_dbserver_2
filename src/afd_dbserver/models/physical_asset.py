@@ -11,7 +11,7 @@ from sqlmodel import (
     Relationship,
     select
 )
-from .mixin import BaseMixin, AttrMixin
+from .mixin import BaseMixin
 from ..exc import NotFoundError, BadRequestError
 
 if TYPE_CHECKING:
@@ -22,8 +22,8 @@ class EPhysicalAssetType(enum.Enum):
     prop        = "prop"
     camera      = "camera"
 
-class PhysicalAsset(BaseMixin, AttrMixin, SQLModel, table=True):
-    """ 
+class PhysicalAsset(BaseMixin, SQLModel, table=True):
+    """
     """
     __tablename__ = "physical_asset_t"
     code: str = Field(max_length=32, unique=True, nullable=False)

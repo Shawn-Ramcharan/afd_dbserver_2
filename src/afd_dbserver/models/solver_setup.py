@@ -4,7 +4,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.schema import UniqueConstraint
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, select)
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .mixin import BaseMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .physical_asset import PhysicalAsset
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .virtual_asset import VirtualAssetRevision
 
 class SolverSetup(
-    BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True
+    BaseMixin, ResourceMixin, SQLModel, table=True
 ):
     """Describes a relationship between a physical performer or prop and the
     source virtual asset that they are solved onto using motion capture.

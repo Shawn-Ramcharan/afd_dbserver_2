@@ -7,7 +7,7 @@ from sqlmodel import (
     Relationship,
     select
 )
-from .mixin import BaseMixin, AttrMixin
+from .mixin import BaseMixin 
 from .resource_mixin import ResourceMixin
 from ..exc import NotFoundError
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from .session import Session
 from .resource import Resource, ResourceAssoc
 
-class Project(BaseMixin, AttrMixin, ResourceMixin, SQLModel, table=True):
+class Project(BaseMixin, ResourceMixin, SQLModel, table=True):
     """Project Table.
     """
     __tablename__ = "project_t"

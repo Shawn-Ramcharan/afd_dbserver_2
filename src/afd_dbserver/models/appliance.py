@@ -10,7 +10,7 @@ from sqlmodel import (
     Field,
     select
 )
-from .mixin import BaseMixin, AttrMixin
+from .mixin import BaseMixin
 
 class EApplianceType(enum.Enum):
     giant           = "giant"
@@ -23,7 +23,7 @@ class EApplianceType(enum.Enum):
     motionbuilder   = "motionbuilder"
     livelinkface    = "livelinkface"
 
-class Appliance(BaseMixin, AttrMixin, SQLModel, table=True):
+class Appliance(BaseMixin, SQLModel, table=True):
     """ A physical device on the mocap stage, e.g. witness camera, HMD, AJA KiPro etc.  
     """
     __tablename__ = "appliance_t"

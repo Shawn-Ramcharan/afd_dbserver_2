@@ -12,7 +12,7 @@ from sqlmodel import (
     Column,
     select
 )
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .mixin import BaseMixin
 from .project import Project
 from ..exc import BadRequestError, NotFoundError
 from .resource import Version
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class CaptureLoad(BaseMixin, SQLModel, table=True):
 
     LIVE: ClassVar = "live"
 
@@ -183,7 +183,7 @@ class CaptureLoad(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=
     #         entry.delete(request)
     #     dbsession.delete(self)
 
-class CaptureLoadEntry(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class CaptureLoadEntry(BaseMixin, SQLModel, table=True):
     """ """
 
     __tablename__ = "capture_load_entry_t"
@@ -355,7 +355,7 @@ class CaptureLoadEntryVersionAddOrUpdate(SQLModel):
     name: str
     version_id: uuid.UUID
 
-class CaptureLoadEntryVersion(BaseMixin, AttrMixin, ProjectScopedDataMixin, SQLModel, table=True):
+class CaptureLoadEntryVersion(BaseMixin, SQLModel, table=True):
     __tablename__ = "capture_load_entry_version_t"
     __table_args__ = (UniqueConstraint(
         "name",

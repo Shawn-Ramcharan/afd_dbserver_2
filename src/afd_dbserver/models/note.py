@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Self
 from sqlalchemy import Enum as SqlaEnum
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, Column)
-from .mixin import IdMixin, BaseMixin, AttrMixin, ProjectScopedDataMixin, ProjectScopedAssocMixin
+from .mixin import IdMixin, BaseMixin
 from .project import Project
 from ..exc import BadRequestError
 
@@ -34,9 +34,6 @@ class ENoteType(enum.Enum):
 
 class Note(
     BaseMixin,
-    AttrMixin,
-    ProjectScopedDataMixin,
-    ProjectScopedAssocMixin,
     SQLModel,
     table=True,
 ):
@@ -62,7 +59,6 @@ class Note(
         link_model=NoteAssoc,
         back_populates="notes"
     )
-    PROJECT_ASSOC_CLS: ClassVar = NoteAssoc
 
     @classmethod
     def create(cls, user_id: str, payload: Self, dbsession: DBSession):

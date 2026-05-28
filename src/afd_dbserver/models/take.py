@@ -7,7 +7,7 @@ from sqlalchemy import ARRAY, Text
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session as DBSession
 from sqlmodel import (SQLModel, Field, Relationship, Field, Column, select, not_, distinct)
-from .mixin import BaseMixin, AttrMixin, ProjectScopedDataMixin
+from .mixin import BaseMixin
 from .resource_mixin import ResourceMixin
 from .project import Project
 from .resource import Resource, ResourceAssoc
@@ -39,7 +39,7 @@ class ETakeStatus(enum.Enum):
 
 
 class Take(
-    BaseMixin, AttrMixin, ResourceMixin, ProjectScopedDataMixin, SQLModel, table=True
+    BaseMixin, ResourceMixin, SQLModel, table=True
 ):
     """ """
 
