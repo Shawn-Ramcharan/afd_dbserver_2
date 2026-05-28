@@ -71,7 +71,7 @@ class Project(BaseMixin, ResourceMixin, SQLModel, table=True):
             is_active: Optional[bool] = True
     ):
         projects = select(cls)
-        if is_active is not None:
+        if is_active is True:
             projects = projects.where(cls.is_active == is_active)
         if client_code is not None:
             projects = projects.where(cls.client_code == client_code)
