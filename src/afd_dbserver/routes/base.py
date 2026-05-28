@@ -13,11 +13,7 @@ def kls_get_owner_by_id[M: BaseMixin](
     owner_kls_names = ""
     for owner_kls in owner_kls_list:
         try:
-            model = owner_kls.get_by_id(id_, dbsession)
-            return {
-                "__class__": owner_kls.__name__,
-                "data": model
-            }
+            return owner_kls.get_by_id(id_, dbsession)
         except NotFoundError:
             owner_kls_names += f"{owner_kls_names.__name__}, "
     owner_kls_names = owner_kls_names[:-2]
@@ -33,10 +29,7 @@ def kls_create[M: BaseMixin](
     dbsession: DBSession
 ) -> dict:
     try:
-        return {
-            "__class__": klass_.__name__,
-            "data": klass_.create(user_id, payload, dbsession)
-        }
+        return klass_.create(user_id, payload, dbsession)
     except BadRequestError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -49,10 +42,7 @@ def kls_get_by_id[M: BaseMixin](
     dbsession: DBSession
 ) -> dict:
     try:
-        return {
-            "__class__": klass_.__name__,
-            "data": klass_.get_by_id(id, dbsession)
-        }
+        return klass_.get_by_id(id, dbsession)
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -66,10 +56,7 @@ def kls_update[M: BaseMixin](
     dbsession: DBSession
 ) -> dict:
     try:
-        return {
-            "__class__": klass_.__name__,
-            "data": klass_.update(user_id, id, payload, dbsession)
-        }
+        return klass_.update(user_id, id, payload, dbsession)
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -98,10 +85,7 @@ def kls_get_by_name[M: BaseMixin](
     dbsession: DBSession
 ) -> dict:
     try:
-        return {
-            "__class__": klass_.__name__,
-            "data": klass_.get_by_name(dbsession, name)
-        }
+        return klass_.get_by_name(dbsession, name)
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -119,10 +103,7 @@ def kls_get_attrs[M: BaseMixin](
     try:
         db_object = klass_.get_by_id(id, dbsession)
         relationship_kls, relationship_data = db_object.get_attr_relationship(attr, limit_=limit_, offset_=offset_)
-        return {
-            "__class__": relationship_kls,
-            "data": relationship_data
-        }
+        return relationship_data
     except BadRequestError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
