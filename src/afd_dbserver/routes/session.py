@@ -34,13 +34,13 @@ attr_router = APIRouter(
     tags=["Sessions"]
 )
 
-@project_router.post("")#, response_model=Session)
+@project_router.post("", response_model=Session)
 def create(project_id: uuid.UUID, payload: Session, dbsession: DBSession = Depends(get_session)):
     user_id = "unknown"
     payload.project_id = project_id
     return kls_create(Session, user_id, payload, dbsession)
 
-@project_router.get("")#, response_model=list[Session | date])
+@project_router.get("", response_model=list[Session | date])
 def get_sessions(
     project_id: uuid.UUID,
     request: Request,
@@ -64,24 +64,19 @@ def get_sessions(
             detail=f"This is an Invalid Request {request.url}"
         )
     if query == "dates":
-        dates_ = Session.get_all_dates(
+        return Session.get_all_dates(
             dbsession,
             project_id,
             location_id
         )
-        return {"data": dates_}
     if name:
-        sessions_ = Session.get_by_name(
+        return Session.get_by_name(
             dbsession,
             project_id,
             name,
             location_id
         )
-        return {
-            "__class__": Session.__name__,
-            "data": sessions_
-        }
-    sessions_ = Session.get_all(
+    return Session.get_all(
         dbsession,
         project_id,
         location_ids=location_ids,
@@ -89,21 +84,17 @@ def get_sessions(
         limit_=limit,
         offset_=offset
     )
-    return {
-        "__class__": Session.__name__,
-        "data": sessions_
-    }
 
-@router.get("")#, response_model=Session)
+@router.get("", response_model=Session)
 def get_by_id(id: uuid.UUID, dbsession: DBSession = Depends(get_session)):
     return kls_get_by_id(Session, id, dbsession)
 
-@router.put("")#, response_model=Session)
+@router.put("", response_model=Session)
 def update(id: uuid.UUID, session_data: Session, dbsession: DBSession = Depends(get_session)):
     user_id = "shawn"
     return kls_update(Session, user_id, id, session_data, dbsession)
 
-@attr_router.get("")#, response_model=Any)
+@attr_router.get("", response_model=Any)
 def get_attrs(
     id: uuid.UUID,
     attr: str,
