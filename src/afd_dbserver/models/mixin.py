@@ -139,6 +139,10 @@ class BaseMixin(IdMixin):
             if value is None:
                 self.attrs.pop(key)
 
+# NOTE: Would like to make the ProjectScopedMixin
+# into Functions rather than Classes and subclassing
+# Them.
+
 class ProjectScopedDataMixin(object):
 
     @classmethod
