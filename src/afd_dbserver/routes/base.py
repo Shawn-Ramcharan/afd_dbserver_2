@@ -84,11 +84,8 @@ def kls_get_by_code[M: BaseMixin](
 ) -> dict:
     try:
         if parent_id:
-            klass_.get_by_code(dbsession, parent_id, code)
-        return {
-            "__class__": klass_.__name__,
-            "data": klass_.get_by_code(dbsession, code)
-        }
+            return klass_.get_by_code(dbsession, parent_id, code)
+        return klass_.get_by_code(dbsession, code)
     except NotFoundError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
