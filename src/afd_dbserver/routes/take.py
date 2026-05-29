@@ -31,7 +31,7 @@ attr_router = APIRouter(
     prefix="/takes/{id}/{attr}", tags=["Takes"]
 )
 
-@project_router.get("")#, response_model=list[Take])
+@project_router.get("", response_model=list[Take])
 def get_all(
     project_id: uuid.UUID,
     request: Request,
@@ -43,7 +43,7 @@ def get_all(
 ):
     """ GET from /project/{id}/takes?omit_status=queued&type=performance
     """
-    takes_ = Take.get_all(
+    return Take.get_all(
         dbsession,
         project_id=project_id,
         type_=type,
@@ -51,10 +51,6 @@ def get_all(
         limit_=limit,
         offset_=offset
     )
-    return {
-        "__class__": Take.__name__,
-        "data": takes_
-    }
 
 @project_router.post("", response_model=Take)
 def create(project_id: uuid.UUID, payload: Take, dbsession: DBSession = Depends(get_session)):

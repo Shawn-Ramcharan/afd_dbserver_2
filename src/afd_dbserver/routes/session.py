@@ -110,17 +110,13 @@ def get_attrs(
         )
     if attr == "takes":
         try:
-            takes_ = Take.get_all(
+            return Take.get_all(
                 dbsession,
                 session_id=id,
                 type_=type,
                 limit_=limit,
                 offset_=offset
             )
-            return {
-                "__class__": Take.__name__,
-                "data": takes_
-            }
         except BadRequestError as err:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
