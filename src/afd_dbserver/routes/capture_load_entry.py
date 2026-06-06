@@ -30,7 +30,7 @@ router = APIRouter(
     tags=["CaptureLoadEntrys"]
 )
 attr_router = APIRouter(
-    prefix="/capture_load_entry/{id}/{attrs}",
+    prefix="/capture_load_entries/{id}/{attr}",
     tags=["CaptureLoadEntrys"]
 )
 versions_router = APIRouter(
@@ -44,10 +44,16 @@ versions_router = APIRouter(
 # and original code did not have a seperate file
 # for cple version. Cple version also did not have
 # an attrs route in the original code.
+capture_load_entry_version_attr_router = APIRouter(
+    prefix="/capture_load_entry_versions/{id}/{attr}",
+    tags=["CaptureLoadEntryVersions"]
+)
+
 capture_load_entry_version_router = APIRouter(
     prefix="/capture_load_entry_versions/{id}",
     tags=["CaptureLoadEntryVersions"]
 )
+
 
 @capture_load_router.post("", response_model=CaptureLoadEntry)
 def create(captur_load_id: uuid.UUID, payload: CaptureLoadEntry, dbsession: DBSession = Depends(get_session)):
@@ -129,3 +135,8 @@ def remove_version_by_name(id: uuid.UUID, name: str, dbsession: DBSession = Depe
 @attr_router.get("", response_model=Any)
 def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
     return kls_get_attrs(CaptureLoadEntry, id, attr, dbsession)
+
+@capture_load_entry_version_attr_router.get("", response_model=Any)
+def get_attrs(id: uuid.UUID, attr: str, dbsession: DBSession = Depends(get_session)):
+    return kls_get_attrs(CaptureLoadEntryVersion, id, attr, dbsession)
+

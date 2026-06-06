@@ -26,7 +26,7 @@ router = APIRouter(
     tags=["Mappings"]
 )
 attr_router = APIRouter(
-    prefix="/mappings/{id}/{attrs}",
+    prefix="/mappings/{id}/{attr}",
     tags=["Mappings"]
 )
 

@@ -19,7 +19,7 @@ from .base import (
 )
 
 session_router = APIRouter(
-    prefix="/sessions/{session_id}/virtual_assets",
+    prefix="/sessions/{session_id}/volumes",
     tags=["Volumes"]
 )
 router = APIRouter(
@@ -27,13 +27,13 @@ router = APIRouter(
     tags=["Volumes"]
 )
 attr_router = APIRouter(
-    prefix="/volumes/{id}/{attrs}",
+    prefix="/volumes/{id}/{attr}",
     tags=["Volumes"]
 )
 
 @session_router.post("", response_model=Volume)
 def create(session_id: uuid.UUID, payload: Volume, dbsession: DBSession = Depends(get_session)):
-    """ POST to /sessions/{id}/virtual_assets
+    """ POST to /sessions/{id}/volumes
     """
     user_id = "unknown"
     payload.session_id = session_id

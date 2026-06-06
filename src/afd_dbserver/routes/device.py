@@ -20,11 +20,11 @@ volume_router = APIRouter(
     tags=["Devices"]
 )
 router = APIRouter(
-    prefix="/device/{id}",
+    prefix="/devices/{id}",
     tags=["Devices"]
 )
 attr_router = APIRouter(
-    prefix="/device/{id}/{attrs}",
+    prefix="/devices/{id}/{attr}",
     tags=["Devices"]
 )
 

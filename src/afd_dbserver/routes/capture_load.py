@@ -28,7 +28,7 @@ router = APIRouter(
     tags=["CaptureLoads"]
 )
 attr_router = APIRouter(
-    prefix="/capture_loads/{id}/{attrs}",
+    prefix="/capture_loads/{id}/{attr}",
     tags=["CaptureLoads"]
 )
 

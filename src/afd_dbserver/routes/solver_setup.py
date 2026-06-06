@@ -31,7 +31,7 @@ router = APIRouter(
     tags=["SolverSetups"]
 )
 attr_router = APIRouter(
-    prefix="/solver_setups/{id}/{attrs}",
+    prefix="/solver_setups/{id}/{attr}",
     tags=["SolverSetups"]
 )
 

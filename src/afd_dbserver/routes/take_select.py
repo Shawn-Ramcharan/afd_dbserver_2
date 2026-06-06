@@ -24,7 +24,7 @@ router = APIRouter(
     tags=["TakeSelects"]
 )
 attr_router = APIRouter(
-    prefix="/take_selects/{id}/{attrs}",
+    prefix="/take_selects/{id}/{attr}",
     tags=["TakeSelects"]
 )
 
